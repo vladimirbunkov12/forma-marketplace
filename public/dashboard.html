@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -426,14 +426,14 @@ async function loadOrders() {
       addLine("Телефон", order.buyer_phone);
       addLine("Город", order.delivery_city);
       addLine("Адрес доставки", order.delivery_address);
-      addLine("Статус заказа", order.status);
+      addLine("Статус заказа", ({new:"Новый",processing:"В работе",ready_for_delivery:"Готов к доставке",in_delivery:"В доставке",completed:"Выполнен"})[order.status] || order.status);
 
       const paymentStatus = order.payment_status === "paid_test"
         ? "Оплачен (тест)"
         : "Ожидает оплаты";
       addLine("Статус оплаты", paymentStatus);
 
-      if (order.payment_status !== "paid_test") {
+      if (["localhost","127.0.0.1"].includes(location.hostname) && order.payment_status !== "paid_test") {
         const demoPaymentButton = document.createElement("button");
         demoPaymentButton.type = "button";
         demoPaymentButton.textContent = "Оплачен (тест)";
@@ -555,7 +555,7 @@ async function loadOrders() {
           }
         }
 
-        if (order.delivery_status === "awaiting_yandex_connection" &&
+        if (["localhost","127.0.0.1"].includes(location.hostname) && order.delivery_status === "awaiting_yandex_connection" &&
             !order.provider_order_id && order.is_demo !== 1) {
           const demoDeliveryButton = document.createElement("button");
           demoDeliveryButton.type = "button";
@@ -596,6 +596,7 @@ async function loadOrders() {
       }
 
       function addDemoDeliveryAction(label, url) {
+        if (!["localhost","127.0.0.1"].includes(location.hostname)) return;
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = label;
