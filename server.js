@@ -26,6 +26,10 @@ const {
 const COMMISSION_AGREEMENT_VERSION = "1.0";
 
 const app = express();
+
+if (process.env.RENDER === "true" && process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 const PORT = process.env.PORT || 3000;
 
 // Доверяем только явно заданным HTTPS reverse proxy адресам в production.
