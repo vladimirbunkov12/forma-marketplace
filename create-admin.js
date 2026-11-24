@@ -13,9 +13,7 @@ async function createAdmin() {
     "SELECT id FROM admin_users WHERE email = ?"
   ).get(email);
 
-  if (existing) {
-    throw new Error("Администратор уже существует.");
-  }
+  if (existing) { console.log("Admin already exists"); return; }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
