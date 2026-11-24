@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Редактирование мебели — FORMA</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.dim-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.dim-field{display:flex;flex-direction:column;gap:5px}
+.dim-field label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.file-box{border:2px dashed var(--line);border-radius:var(--radius-sm);padding:24px;text-align:center;background:var(--surface-soft);cursor:pointer;transition:border-color 0.2s ease}
+.file-box:hover{border-color:var(--gold)}
+.file-hint{font-size:11px;color:var(--muted-soft);margin-top:8px}
+.preview-wrap{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--white)}
+.preview-wrap img{max-width:100%;max-height:350px;display:block;margin:0 auto}
+.hint{font-size:12px;color:var(--muted)}
+@media(max-width:640px){.dim-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<div class="topline">Редактирование товара · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <a class="button-ghost" href="/dashboard.html">Мой кабинет</a>
+  <div class="header-actions"></div>
+</div></header>
+
+<main class="container wrap">
+  <h1 style="font-size:24px;margin-bottom:8px">Редактировать мебель</h1>
+  <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:20px">Измените информацию о товаре или замените фотографию.</p>
+
+  <form id="editForm" hidden class="card card-padded">
+    <div class="field-group">
+      <label class="field-label" for="name">Название</label>
+      <input class="field-control" id="name" required maxlength="150">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="category">Категория</label>
+      <select class="field-control" id="category" required>
+        <option value="Кухни">Кухни</option>
+        <option value="Шкафы">Шкафы</option>
+        <option value="Диваны">Диваны</option>
+        <option value="Кровати">Кровати</option>
+        <option value="Столы">Столы</option>
+        <option value="Другая мебель">Другая мебель</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="price">Цена, ₸</label>
+      <input class="field-control" id="price" type="number" min="1" step="1" required>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="description">Описание</label>
+      <textarea class="field-control" id="description" required></textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" style="display:block;margin-bottom:6px">Размеры упаковки</label>
+      <div class="dim-row">
+        <div class="dim-field"><label>Вес (кг)</label><input class="field-control" id="weight_kg" type="number" min="0.01" step="any"></div>
+        <div class="dim-field"><label>Длина (см)</label><input class="field-control" id="length_cm" type="number" min="0.01" step="any"></div>
+        <div class="dim-field"><label>Ширина (см)</label><input class="field-control" id="width_cm" type="number" min="0.01" step="any"></div>
+        <div class="dim-field"><label>Высота (см)</label><input class="field-control" id="height_cm" type="number" min="0.01" step="any"></div>
+      </div>
+    </div>
+
+    <button id="saveButton" class="button button-primary" type="submit" style="margin-top:24px">Сохранить изменения</button>
+  </form>
+
+  <section id="photoSection" class="card card-padded" hidden>
+    <h2 style="font-size:18px;margin-bottom:8px">Фотография товара</h2>
+    <p class="hint">Текущая фотография:</p>
+    <div id="preview" class="preview-wrap" hidden><img id="photoPreview" alt="Фотография мебели"></div>
+    <div class="file-box" id="photoDrop" style="margin-top:14px">
+      <input type="file" id="newPhoto" accept="image/jpeg,image/png,image/webp" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100">
+      <div style="font-weight:600">Выбрать новую фотографию</div>
+      <p class="file-hint">JPG, PNG или WEBP. Максимум 5 МБ.</p>
+    </div>
+    <button id="photoButton" class="button button-primary button-sm" type="button" style="margin-top:12px">Сохранить фотографию</button>
+    <p id="photoMessage" role="status" class="message" style="font-size:12px;margin-top:10px"></p>
+  </section>
+
+  <p id="message" role="status" class="message">Загрузка товара...</p>
+</main>
+
+<script>
+const form = document.getElementById("editForm");
+const message = document.getElementById("message");
+const saveButton = document.getElementById("saveButton");
+const photoSection = document.getElementById("photoSection");
+const photoPreview = document.getElementById("photoPreview");
+const newPhoto = document.getElementById("newPhoto");
+const photoButton = document.getElementById("photoButton");
+const photoMessage = document.getElementById("photoMessage");
+const drop = document.getElementById("photoDrop");
+
+const id = new URLSearchParams(window.location.search).get("id");
+let previewUrl = null;
+
+async function loadProduct() {
+  if (!id || !/^[1-9]\d*$/.test(id)) {
+    message.textContent = "Неверный номер товара.";
+    message.className = "message error";
+    return;
+  }
+
+  try {
+    const authResponse = await fetch("/api/me");
+    const auth = await authResponse.json();
+
+    if (!authResponse.ok || !auth.success || !auth.company) {
+      location.replace("/login.html");
+      return;
+    }
+
+    const response = await fetch("/api/products");
+    if (!response.ok) throw new Error("Ошибка загрузки");
+
+    const result = await response.json();
+
+    if (!result.success || !Array.isArray(result.products)) {
+      throw new Error("Не удалось получить товары");
+    }
+
+    const product = result.products.find(
+      item => String(item.id) === id
+    );
+
+    if (!product) {
+      throw new Error("Товар не найден");
+    }
+
+    if (
+      product.company_name !== auth.company.company_name ||
+      product.city !== auth.company.city
+    ) {
+      throw new Error("Нет доступа к этому товару");
+    }
+
+    document.getElementById("name").value = product.name || "";
+    document.getElementById("price").value = product.price || "";
+    document.getElementById("description").value =
+      product.description || "";
+    document.getElementById("weight_kg").value =
+      product.weight_kg == null ? "" : product.weight_kg;
+    document.getElementById("length_cm").value =
+      product.length_cm == null ? "" : product.length_cm;
+    document.getElementById("width_cm").value =
+      product.width_cm == null ? "" : product.width_cm;
+    document.getElementById("height_cm").value =
+      product.height_cm == null ? "" : product.height_cm;
+
+    const category = document.getElementById("category");
+    const exists = Array.from(category.options).some(
+      option => option.value === product.category
+    );
+
+    if (!exists && product.category) {
+      category.add(new Option(product.category, product.category));
+    }
+
+    category.value = product.category;
+
+    if (product.photoUrl) {
+      photoPreview.src = product.photoUrl;
+      photoPreview.style.display = "block";
+      document.getElementById("preview").hidden = false;
+    }
+
+    form.hidden = false;
+    photoSection.hidden = false;
+    message.textContent = "";
+
+  } catch (error) {
+    message.textContent = error.message;
+    message.className = "message error";
+  }
+}
+
+newPhoto.addEventListener("change", () => {
+  const file = newPhoto.files[0];
+
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+  }
+
+  if (!file) return;
+
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+
+  if (!allowed.includes(file.type)) {
+    photoMessage.textContent = "Выберите JPG, PNG или WEBP.";
+    photoMessage.className = "message error";
+    newPhoto.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    photoMessage.textContent = "Файл больше 5 МБ.";
+    photoMessage.className = "message error";
+    newPhoto.value = "";
+    return;
+  }
+
+  previewUrl = URL.createObjectURL(file);
+  photoPreview.src = previewUrl;
+  photoPreview.style.display = "block";
+  document.getElementById("preview").hidden = false;
+  photoMessage.textContent = "Новое фото выбрано. Нажмите «Сохранить фотографию».";
+  photoMessage.className = "message";
+});
+
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag-over"); });
+drop.addEventListener("dragleave", () => { drop.classList.remove("drag-over"); });
+drop.addEventListener("drop", e => {
+  e.preventDefault();
+  drop.classList.remove("drag-over");
+  const files = e.dataTransfer.files;
+  if (files.length) newPhoto.files = files;
+  newPhoto.dispatchEvent(new Event("change"));
+});
+
+photoButton.addEventListener("click", async () => {
+  const file = newPhoto.files[0];
+
+  if (!file) {
+    photoMessage.textContent = "Сначала выберите фотографию.";
+    photoMessage.className = "message error";
+    return;
+  }
+
+  photoButton.disabled = true;
+  photoButton.textContent = "Загружаем...";
+  photoMessage.textContent = "";
+
+  try {
+    const data = new FormData();
+    data.append("photo", file);
+
+    const response = await fetch(
+      "/api/products/" + encodeURIComponent(id) + "/photo",
+      {
+        method: "PUT",
+        body: data
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Ошибка загрузки фотографии");
+    }
+
+    photoMessage.textContent = "Фотография успешно обновлена!";
+    photoMessage.className = "message success";
+    newPhoto.value = "";
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
+    }
+
+    const refresh = await fetch("/api/products");
+    if (refresh.ok) {
+      const updated = await refresh.json();
+      const product = updated.products?.find(
+        item => String(item.id) === id
+      );
+
+      if (product?.photoUrl) {
+        const url = new URL(product.photoUrl, location.origin);
+        url.searchParams.set("v", Date.now());
+        photoPreview.src = url.href;
+      }
+    }
+
+  } catch (error) {
+    photoMessage.textContent = error.message;
+    photoMessage.className = "message error";
+  } finally {
+    photoButton.disabled = false;
+    photoButton.textContent = "Сохранить фотографию";
+  }
+});
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  saveButton.disabled = true;
+  saveButton.textContent = "Сохраняем...";
+  message.textContent = "";
+
+  try {
+    const response = await fetch(
+      "/api/products/" + encodeURIComponent(id),
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("name").value.trim(),
+          category: document.getElementById("category").value,
+          price: Number(document.getElementById("price").value),
+          description: document.getElementById("description").value.trim(),
+          weight_kg: document.getElementById("weight_kg").value === ""
+            ? null
+            : Number(document.getElementById("weight_kg").value),
+          length_cm: document.getElementById("length_cm").value === ""
+            ? null
+            : Number(document.getElementById("length_cm").value),
+          width_cm: document.getElementById("width_cm").value === ""
+            ? null
+            : Number(document.getElementById("width_cm").value),
+          height_cm: document.getElementById("height_cm").value === ""
+            ? null
+            : Number(document.getElementById("height_cm").value)
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Ошибка сохранения");
+    }
+
+    alert("Изменения сохранены!");
+    location.href = "/dashboard.html";
+
+  } catch (error) {
+    message.textContent = error.message;
+    message.className = "message error";
+    saveButton.disabled = false;
+    saveButton.textContent = "Сохранить изменения";
+  }
+});
+
+loadProduct();
+</script>
+
+</body>
+</html>

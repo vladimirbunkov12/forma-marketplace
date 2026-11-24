@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>Оформление заказа — FORMA MARKETPLACE</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Оформление заказа · FORMA MARKETPLACE</div>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+    <a class="button-ghost" href="/catalog.html">← Вернуться в каталог</a>
+    <div class="header-actions"></div>
+  </div></header>
+  <main class="container wrap">
+    <h1>Оформление заказа</h1>
+    <p id="productInfo" style="color:var(--muted);font-size:12px">Загрузка информации о товаре...</p>
+    <form id="orderForm">
+      <div class="field-group">
+        <label class="field-label" for="buyerName">Ваше имя</label>
+        <input class="field-control" id="buyerName" type="text" maxlength="100" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="buyerPhone">Телефон</label>
+        <input class="field-control" id="buyerPhone" type="tel" placeholder="+7 777 123 45 67" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="deliveryCity">Город доставки</label>
+        <input class="field-control" id="deliveryCity" type="text" placeholder="Алматы" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="deliveryAddress">Адрес доставки</label>
+        <textarea class="field-control" id="deliveryAddress" rows="3" placeholder="Улица, дом, квартира" required></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="comment">Комментарий к заказу</label>
+        <textarea class="field-control" id="comment" rows="3"></textarea>
+      </div>
+      <section class="card card-sm card-padded delivery">
+        <p style="font-weight:600;margin:0 0 8px">Доставка: Яндекс</p>
+        <p id="deliveryPaymentInfo" style="color:var(--muted);font-size:12px;margin:0 0 6px">Способ оплаты доставки уточняется</p>
+        <small style="color:var(--muted-soft)">Оформление доставки будет подтверждено продавцом.</small>
+      </section>
+      <button id="submitButton" class="button button-primary" type="submit">Оформить заказ</button>
+    </form>
+    <div class="message" id="message" role="status"></div>
+  </main>
+  <script>
+const params = new URLSearchParams(window.location.search);
+const productId = Number(params.get("productId"));
+const productInfo = document.getElementById("productInfo");
+const orderForm = document.getElementById("orderForm");
+const message = document.getElementById("message");
+const submitButton = document.getElementById("submitButton");
+
+let selectedProduct = null;
+let dimensions = {};
+
+try {
+  const raw = params.get("dimensions");
+  if (raw) dimensions = JSON.parse(raw);
+} catch {
+  dimensions = {};
+}
+
+async function loadProduct() {
+  if (!Number.isInteger(productId) || productId <= 0) {
+    productInfo.textContent = "Товар не выбран. Вернитесь в каталог.";
+    orderForm.hidden = true;
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/products");
+    if (!response.ok) throw new Error("Не удалось загрузить товары");
+
+    const result = await response.json();
+    selectedProduct = (result.products || [])
+      .find(p => Number(p.id) === productId);
+
+    if (!selectedProduct) {
+      productInfo.textContent = "Товар не найден.";
+      orderForm.hidden = true;
+      return;
+    }
+
+    const category = String(selectedProduct.category || "");
+    const price = Number(selectedProduct.price) || 0;
+
+    let estimatedPrice = price;
+    let sizeText = "";
+
+    if (category === "Кухни" &&
+        Number(selectedProduct.kitchen_per_meter) > 0) {
+      const length = Number(dimensions.length);
+      if (!(length >= 0.5 && length <= 30)) {
+        throw new Error("Не указана допустимая длина кухни");
+      }
+      estimatedPrice = Math.round(
+        length * Number(selectedProduct.kitchen_per_meter)
+      );
+      sizeText = " | Длина: " + length + " м";
+    }
+
+    if (category === "Шкафы" &&
+        Number(selectedProduct.wardrobe_per_sqm) > 0) {
+      const width = Number(dimensions.width);
+      const height = Number(dimensions.height);
+      if (!(width >= 0.1 && width <= 20 &&
+            height >= 0.1 && height <= 10)) {
+        throw new Error("Не указаны допустимые размеры шкафа");
+      }
+      estimatedPrice = Math.round(
+        width * height * Number(selectedProduct.wardrobe_per_sqm)
+      );
+      sizeText = " | Размеры: " + width + " × " + height + " м";
+    }
+
+    productInfo.textContent =
+      "Товар: " + selectedProduct.name +
+      sizeText +
+      " | Предварительная стоимость: " +
+      new Intl.NumberFormat("ru-RU").format(estimatedPrice) + " ₸";
+
+  } catch (error) {
+    productInfo.textContent = error.message;
+    orderForm.hidden = true;
+  }
+}
+
+orderForm.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!selectedProduct) return;
+
+  submitButton.disabled = true;
+  message.textContent = "Отправляем заказ...";
+
+  const data = {
+    productId,
+    quantity: 1,
+    buyerName: document.getElementById("buyerName").value.trim(),
+    buyerPhone: document.getElementById("buyerPhone").value.trim(),
+    deliveryCity: document.getElementById("deliveryCity").value.trim(),
+    deliveryAddress: document.getElementById("deliveryAddress").value.trim(),
+    comment: document.getElementById("comment").value.trim(),
+    dimensions
+  };
+
+  try {
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Ошибка оформления заказа");
+    }
+
+    const paymentBy = result.delivery?.paymentBy;
+    const paymentMessages = {
+      seller: "Доставку оплачивает продавец",
+      buyer: "Доставку оплачивает покупатель"
+    };
+    document.getElementById("deliveryPaymentInfo").textContent =
+      paymentMessages[paymentBy] || "Способ оплаты доставки уточняется";
+
+    message.textContent =
+      "Заказ успешно создан! Номер заказа: " +
+      (result.orderId ?? result.order?.id ?? "уточняется") +
+      ". Продавец сможет обработать заявку.";
+    message.className = "message success";
+
+    orderForm.hidden = true;
+
+  } catch (error) {
+    message.textContent = "Ошибка: " + error.message;
+    message.className = "message error";
+    submitButton.disabled = false;
+  }
+});
+// Автоматическое заполнение данных покупателя
+async function autofillBuyerProfile() {
+  try {
+    const response = await fetch("/api/buyer/me", {
+      credentials: "same-origin"
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const buyer = data.buyer;
+
+    if (!buyer) return;
+
+    const nameInput = document.getElementById("buyerName");
+    const phoneInput = document.getElementById("buyerPhone");
+    const cityInput = document.getElementById("deliveryCity");
+    const addressInput = document.getElementById("deliveryAddress");
+
+    if (buyer.name && !nameInput.value) {
+      nameInput.value = buyer.name;
+    }
+
+    if (buyer.phone && !phoneInput.value) {
+      phoneInput.value = buyer.phone;
+    }
+
+    if (buyer.delivery_address && !addressInput.value) {
+      addressInput.value = buyer.delivery_address;
+    }
+
+    if (buyer.city && !cityInput.value) {
+      cityInput.value = buyer.city;
+    }
+
+  } catch (error) {
+    console.error("Ошибка загрузки профиля покупателя:", error);
+  }
+}
+
+autofillBuyerProfile();
+loadProduct();
+  </script>
+</body>
+</html>

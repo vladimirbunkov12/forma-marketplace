@@ -1,0 +1,1306 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Личный кабинет продавца — FORMA MARKETPLACE</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.sidebar-wrap{display:flex;gap:24px;align-items:flex-start}
+.sidebar{flex:0 0 260px;position:sticky;top:96px}
+.main-content{flex:1}
+.section-card{margin-bottom:24px}
+.status-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:10px;font-weight:600;border:1px solid transparent}
+.status-new{background:#eef2e9;color:#4a634a;border-color:#d3dfca}
+.status-processing{background:#f4efe6;color:var(--graphite-soft);border-color:var(--line)}
+.status-ready{background:#e9e3d8;color:var(--gold-dark);border-color:var(--beige)}
+.status-delivery{background:#e7ecef;color:#5b6b75;border-color:#cfd8e0}
+.status-completed{background:#e9f2ea;color:#4a634a;border-color:#d3dfca}
+.order-card{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white);padding:18px;margin-bottom:14px}
+.order-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.order-number{font-size:13px;font-weight:700;color:var(--graphite)}
+.order-total{font-size:15px;font-weight:700;color:var(--gold-dark);font-variant-numeric:tabular-nums}
+.details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px}
+.detail-item{font-size:12px;color:var(--graphite-soft)}
+.detail-item strong{color:var(--graphite);font-weight:600}
+@media(max-width:920px){.sidebar-wrap{flex-direction:column}.sidebar{position:static;width:100%;top:auto}}
+</style>
+</head>
+<body>
+
+<div class="topline">Кабинет продавца · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <nav class="main-nav"><a href="/catalog.html">Каталог</a><a href="/dashboard.html" aria-current="page">Кабинет</a><a href="/seller-prices.html">Расценки</a></nav>
+  <div class="header-actions"><button id="logoutButton" class="button button-outline" type="button">Выйти</button></div>
+</div></header>
+
+<div class="wrap sidebar-wrap" style="padding:32px 0 64px">
+  <aside class="sidebar">
+    <div class="sidebar-nav">
+      <a class="sidebar-item active" href="#overview" aria-current="page"><span aria-hidden="true">⌂</span>Обзор</a>
+      <a class="sidebar-item" href="#products"><span aria-hidden="true">🪑</span>Мои товары</a>
+      <a class="sidebar-item" href="#orders"><span aria-hidden="true">📦</span>Заказы</a>
+      <a class="sidebar-item" href="#finance"><span aria-hidden="true">💳</span>Финансы</a>
+      <a class="sidebar-item" href="#payment"><span aria-hidden="true">🏦</span>Реквизиты</a>
+      <a class="sidebar-item" href="#delivery"><span aria-hidden="true">🚚</span>Доставка</a>
+    </div>
+    <div style="margin-top:24px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-soft)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:8px">Статус компании</div>
+      <div id="companyStatusBadge" class="badge badge-new" style="font-size:11px">Активна</div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <h1 id="welcome">Загрузка кабинета...</h1>
+    <p class="subtitle" id="companyInfo" style="color:var(--muted);font-size:13px;margin-bottom:24px">Проверяем аккаунт продавца.</p>
+
+    <div id="dashboardContent" hidden>
+
+      <section id="overview" class="section-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+          <div><div class="eyebrow" style="margin-bottom:6px">Ваши показатели</div><h2 style="font-size:26px">Обзор кабинета</h2></div>
+          <a href="/add-product.html" class="button button-primary button-sm">+ Добавить мебель</a>
+        </div>
+        <div class="stats" id="overviewStats">
+          <div class="stat-card"><div class="stat-label">Мои товары</div><div class="stat-value" id="productsCount">0</div></div>
+          <div class="stat-card"><div class="stat-label">Заявки покупателей</div><div class="stat-value" id="overviewOrders">—</div></div>
+          <div class="stat-card"><div class="stat-label">Просмотры товаров</div><div class="stat-value" id="overviewViews">—</div></div>
+        </div>
+        <div style="margin-top:20px;padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-soft)">
+          <div class="eyebrow" style="margin-bottom:8px">Адрес склада / производства</div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Укажите адрес, откуда Яндекс Доставка будет забирать мебель.</p>
+          <input type="text" id="pickupAddress" placeholder="Например: Алматы, ул. Абая, 25" maxlength="300" class="field-control">
+          <button type="button" id="savePickupAddress" class="button button-primary button-sm" style="margin-top:12px">Сохранить адрес</button>
+          <p id="pickupAddressMessage" class="message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="products" class="section-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+          <h2 style="font-size:22px">Мои товары</h2>
+          <a href="/add-product.html" class="button button-primary">+ Добавить мебель</a>
+        </div>
+        <div class="products-grid" id="myProducts" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px">
+          <p class="notice" style="color:var(--muted)">Загружаем товары...</p>
+        </div>
+        <p id="productsCountHint" style="color:var(--muted);font-size:12px;margin-top:10px"></p>
+      </section>
+
+      <section id="sellerCommissionProposal" class="section-card" style="display:none">
+        <div style="padding:20px;border:1px solid var(--beige);border-radius:var(--radius-sm);background:#faf8f4">
+          <h2 style="font-size:20px;margin-bottom:10px">Предложение об изменении комиссии</h2>
+          <p id="sellerCommissionCurrentRate" style="color:var(--graphite-soft);margin-bottom:10px"></p>
+          <p id="sellerCommissionProposalText" style="color:var(--graphite-soft);margin-bottom:12px"></p>
+          <p id="sellerCommissionProposalMessage" role="status" aria-live="polite" style="font-size:12px"></p>
+          <button type="button" id="acceptCommissionProposal" class="button button-primary button-sm">Принимаю</button>
+          <button type="button" id="rejectCommissionProposal" class="button button-outline button-sm" style="margin-left:8px">Отказываюсь</button>
+        </div>
+      </section>
+
+      <section id="orders" class="section-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+          <h2 style="font-size:22px">Мои заказы</h2>
+          <button type="button" id="refreshOrders" class="button button-outline button-sm">Обновить заказы</button>
+        </div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Здесь отображаются заказы покупателей вашей компании.</p>
+        <div id="ordersList">Загрузка заказов...</div>
+      </section>
+
+      <section id="finance" class="section-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+          <div><h2 style="font-size:22px">Финансы</h2><p style="color:var(--muted);font-size:12px;margin-top:4px">Продажи показаны отдельно. Комиссия и сумма продавцу учитывают только заказы с подтверждённой ставкой.</p></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:20px 0">
+          <article style="padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)"><h3 style="margin-top:0;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-dark)">Общая сумма продаж</h3><div id="financeSalesTotal" style="font-size:1.4rem;font-weight:bold">Загрузка...</div></article>
+          <article style="padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)"><h3 style="margin-top:0;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-dark)">Подтверждённая комиссия FORMA</h3><div id="financeCommissionTotal" style="font-size:1.4rem;font-weight:bold">Загрузка...</div></article>
+          <article style="padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)"><h3 style="margin-top:0;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-dark)">Расчётная сумма продавцу</h3><div id="financeSellerAmountTotal" style="font-size:1.4rem;font-weight:bold">Загрузка...</div></article>
+          <article style="padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)"><h3 style="margin-top:0;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-dark)">Все заказы</h3><div id="financeOrderCount" style="font-size:1.4rem;font-weight:bold">Загрузка...</div></article>
+          <article style="padding:18px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)"><h3 style="margin-top:0;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-dark)">Требуют уточнения</h3><div id="financeClarificationCount" style="font-size:1.4rem;font-weight:bold">Загрузка...</div></article>
+        </div>
+        <h3 style="font-size:16px;margin-top:24px;margin-bottom:10px">История начислений по заказам</h3>
+        <div style="overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">
+          <table class="data-table" style="min-width:700px">
+            <thead>
+              <tr><th>Заказ / дата</th><th style="text-align:right">Продажа</th><th style="text-align:right">Комиссия FORMA</th><th style="text-align:right">Продавцу</th><th>Статус</th></tr>
+            </thead>
+            <tbody id="financeHistory"><tr><td colspan="5" style="padding:16px;color:var(--muted)">Загрузка истории...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="payment" class="section-card">
+        <div style="padding:24px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)">
+          <h2 style="font-size:20px;margin-bottom:8px">Платёжные реквизиты</h2>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:18px">Реквизиты доступны только вашей компании. Они не используются для приёма платежей или подтверждения оплаты заказов.</p>
+          <form id="sellerPaymentDetailsForm" style="max-width:650px">
+            <div class="field-group">
+              <label class="field-label" for="paymentBusinessType">Форма бизнеса</label>
+              <select class="field-control" id="paymentBusinessType" required>
+                <option value="ip">ИП</option>
+                <option value="too">ТОО</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" id="paymentIdentifierLabel" for="paymentBusinessIdentifier">ИИН</label>
+              <input class="field-control" id="paymentBusinessIdentifier" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]{12}" maxlength="12" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="paymentBankName">Название банка</label>
+              <input class="field-control" id="paymentBankName" type="text" maxlength="120" autocomplete="organization" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="paymentIban">IBAN</label>
+              <input class="field-control" id="paymentIban" type="text" placeholder="KZ000000000000000000" autocomplete="off" maxlength="22" required style="text-transform:uppercase;">
+            </div>
+            <div style="margin-top:14px">
+              <button id="fillDemoPaymentDetails" type="button" class="button button-outline button-sm" style="margin-right:8px">Заполнить тестовыми реквизитами</button>
+              <button id="savePaymentDetails" type="submit" class="button button-primary button-sm">Сохранить реквизиты</button>
+            </div>
+          </form>
+          <p id="paymentDetailsMessage" role="status" aria-live="polite" class="message" style="margin-top:12px"></p>
+        </div>
+      </section>
+
+      <section id="delivery" class="section-card">
+        <div style="padding:24px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--white)">
+          <h2 style="font-size:20px;margin-bottom:10px">Настройки Яндекс Доставки</h2>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Подключите доставку для вашего мебельного магазина.</p>
+          <div class="field-group">
+            <label class="field-label" for="yandexApiKey">API-ключ Яндекс Доставки</label>
+            <input type="password" id="yandexApiKey" class="field-control" placeholder="Введите API-ключ" autocomplete="off">
+          </div>
+          <div class="field-group" style="margin-top:16px">
+            <label class="field-label" for="pickupCity">Город отправления мебели</label>
+            <input type="text" id="pickupCity" class="field-control" placeholder="Например: Алматы">
+          </div>
+          <div class="field-group" style="margin-top:12px">
+            <label class="field-label" for="companyPickupAddress">Адрес склада или производства</label>
+            <input type="text" id="companyPickupAddress" class="field-control" placeholder="Улица, дом, номер помещения">
+          </div>
+          <fieldset style="margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-soft)">
+            <legend style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-dark);padding:0 8px">Плательщик доставки</legend>
+            <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-weight:normal;color:var(--graphite-soft);font-size:13px"><input type="radio" name="deliveryPaymentBy" value="seller" checked style="width:auto;margin:0"> Оплачивает продавец</label>
+            <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-weight:normal;color:var(--graphite-soft);font-size:13px"><input type="radio" name="deliveryPaymentBy" value="buyer" style="width:auto;margin:0"> Оплачивает покупатель</label>
+            <p class="hint" style="margin-bottom:0;font-size:11px;color:var(--muted)">Внутренняя настройка FORMA; она сама по себе не меняет способ списания средств Яндексом.</p>
+          </fieldset>
+          <p style="font-size:13px;color:var(--muted);margin-top:10px">У каждого магазина будет собственный API-ключ.</p>
+          <button type="button" id="saveYandexKey" class="button button-primary button-sm" style="margin-top:10px">Подключить Яндекс Доставку</button>
+          <button type="button" id="disconnectYandexKey" class="button button-outline button-sm" style="margin-top:8px">Отключить Яндекс Доставку</button>
+          <button type="button" id="saveCompanyPickupAddress" class="button button-primary button-sm" style="margin-top:10px">Сохранить адрес склада</button>
+          <p id="yandexKeyMessage" class="message" role="status" style="margin-top:10px"></p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const welcome = document.getElementById("welcome");
+const companyInfo = document.getElementById("companyInfo");
+const dashboardContent =
+  document.getElementById("dashboardContent");
+
+const productsContainer =
+  document.getElementById("myProducts");
+
+const productsCount =
+  document.getElementById("productsCount");
+
+let currentCompany = null;
+let currentCommissionProposalId = null;
+let paymentDetailsDemoMode = false;
+
+function makeElement(tag, className, value) {
+  const element = document.createElement(tag);
+  element.className = className;
+  element.textContent = value ?? "";
+  return element;
+}
+
+function showProductsMessage(message) {
+  productsContainer.replaceChildren();
+
+  const text = makeElement("p", "notice", message);
+  productsContainer.appendChild(text);
+}
+
+async function loadMyProducts(company) {
+  try {
+    const response = await fetch("/api/products");
+
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки товаров");
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !Array.isArray(result.products)) {
+      throw new Error("Неверный ответ сервера");
+    }
+
+    const myProducts = result.products.filter(product =>
+      product.company_name === company.company_name &&
+      product.city === company.city
+    );
+
+    productsCount.textContent = myProducts.length;
+    productsContainer.replaceChildren();
+
+    if (myProducts.length === 0) {
+      showProductsMessage(
+        "У вас пока нет товаров. Нажмите «Добавить мебель»."
+      );
+      return;
+    }
+
+    myProducts.forEach(product => {
+      const card = document.createElement("article");
+      card.className = "product-card";
+
+      const image = document.createElement("img");
+      image.src = product.photoUrl || "";
+      image.alt = product.name || "Мебель";
+      image.loading = "lazy";
+
+      const info = document.createElement("div");
+      info.className = "product-info";
+
+      const category = makeElement(
+        "div",
+        "category",
+        product.category
+      );
+
+      const title = makeElement(
+        "h3",
+        "",
+        product.name
+      );
+
+      const price = makeElement(
+        "div",
+        "price",
+        new Intl.NumberFormat("ru-RU").format(
+          Number(product.price) || 0
+        ) + " ₸"
+      );
+
+      info.append(category, title, price);
+
+      // Кнопка редактирования
+      const editButton = document.createElement("a");
+
+      editButton.href =
+        "/edit-product.html?id=" +
+        encodeURIComponent(product.id);
+
+      editButton.textContent = "Редактировать";
+      editButton.className = "edit-button";
+
+      info.appendChild(editButton);
+
+      // Кнопка удаления
+      const deleteButton = document.createElement("button");
+
+      deleteButton.type = "button";
+      deleteButton.className = "delete-button";
+      deleteButton.textContent = "Удалить товар";
+
+      deleteButton.addEventListener("click", async () => {
+        const confirmed = confirm(
+          "Вы действительно хотите удалить товар «" +
+          product.name + "»?\n\n" +
+          "Это действие нельзя отменить."
+        );
+
+        if (!confirmed) return;
+
+        deleteButton.disabled = true;
+        deleteButton.textContent = "Удаляем...";
+
+        try {
+          const response = await fetch(
+            "/api/products/" + encodeURIComponent(product.id),
+            { method: "DELETE" }
+          );
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(
+              result.message || "Не удалось удалить товар"
+            );
+          }
+
+          await loadMyProducts(currentCompany);
+
+          alert("Товар успешно удалён!");
+
+        } catch (error) {
+          alert(error.message);
+          deleteButton.disabled = false;
+          deleteButton.textContent = "Удалить товар";
+        }
+      });
+
+      info.appendChild(deleteButton);
+
+      card.append(image, info);
+      productsContainer.appendChild(card);
+    });
+
+  } catch (error) {
+    productsCount.textContent = "—";
+    showProductsMessage(
+      "Не удалось загрузить товары. Проверьте сервер."
+    );
+    console.error(error);
+  }
+}
+
+async function loadOrders() {
+  const list = document.getElementById("ordersList");
+
+  if (!list) return;
+
+  list.textContent = "Загрузка заказов...";
+
+  try {
+    let yandexDeliveryConnected = false;
+    try {
+      const settingsResponse = await fetch("/api/yandex-settings");
+      if (settingsResponse.ok) {
+        const settings = await settingsResponse.json();
+        yandexDeliveryConnected =
+          settings.success === true && settings.connected === true;
+      }
+    } catch {
+      // Fail closed: no delivery handoff button if connection status is unknown.
+    }
+
+    const response = await fetch("/api/orders");
+
+    if (!response.ok) {
+      throw new Error("Не удалось загрузить заказы. Проверьте вход в кабинет.");
+    }
+
+    const result = await response.json();
+    const orders = result.orders || [];
+
+    list.replaceChildren();
+
+    if (!orders.length) {
+      list.textContent = "Пока заказов нет.";
+      return;
+    }
+
+    orders.forEach(order => {
+      const card = document.createElement("div");
+
+      card.className = "order-card";
+
+      const addLine = (label, value) => {
+        const line = document.createElement("div");
+        line.className = "detail-item";
+        const strong = document.createElement("strong");
+        strong.textContent = label + ": ";
+        line.append(strong, document.createTextNode(String(value ?? "—")));
+        card.appendChild(line);
+      };
+
+      const head = document.createElement("div");
+      head.className = "order-head";
+      const number = document.createElement("span");
+      number.className = "order-number";
+      number.textContent = "Заказ №" + order.id;
+      const total = document.createElement("span");
+      total.className = "order-total";
+      total.textContent = new Intl.NumberFormat("ru-RU").format(Number(order.total_amount) || 0) + " ₸";
+      head.append(number, total);
+      card.insertBefore(head, card.firstChild);
+
+      addLine("Покупатель", order.buyer_name);
+      addLine("Телефон", order.buyer_phone);
+      addLine("Город", order.delivery_city);
+      addLine("Адрес доставки", order.delivery_address);
+      addLine("Статус заказа", order.status);
+
+      const paymentStatus = order.payment_status === "paid_test"
+        ? "Оплачен (тест)"
+        : "Ожидает оплаты";
+      addLine("Статус оплаты", paymentStatus);
+
+      if (order.payment_status !== "paid_test") {
+        const demoPaymentButton = document.createElement("button");
+        demoPaymentButton.type = "button";
+        demoPaymentButton.textContent = "Оплачен (тест)";
+        demoPaymentButton.className = "button button-outline button-sm";
+        demoPaymentButton.style.marginTop = "10px";
+        demoPaymentButton.addEventListener("click", async () => {
+          demoPaymentButton.disabled = true;
+          try {
+            const response = await fetch(
+              "/api/orders/" + encodeURIComponent(order.id) + "/demo-payment",
+              { method: "POST" }
+            );
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.message || "Не удалось обновить демо-статус.");
+            }
+            await loadOrders();
+          } catch (error) {
+            alert(error.message);
+            demoPaymentButton.disabled = false;
+          }
+        });
+        const demoNotice = document.createElement("p");
+        demoNotice.textContent = "Только демонстрация: это не подтверждает реальную оплату.";
+        demoNotice.style.fontSize = "12px";
+        demoNotice.style.color = "var(--muted)";
+        card.append(demoPaymentButton, demoNotice);
+      }
+
+      const items = order.items || [];
+      items.forEach(item => {
+        addLine("Товар", item.product_name || item.name || "Мебель");
+        if (item.dimensions) {
+          try {
+            const dimensions = typeof item.dimensions === "string"
+              ? JSON.parse(item.dimensions)
+              : item.dimensions;
+            addLine("Размеры", JSON.stringify(dimensions));
+          } catch {
+            addLine("Размеры", item.dimensions);
+          }
+        }
+      });
+
+      if (order.delivery) {
+        addLine("Служба доставки", order.delivery.provider || "Яндекс");
+        addLine("Статус доставки", order.delivery.status || "Не оформлена");
+      }
+
+      const statusNames = {
+        new: "Новый",
+        processing: "В работе",
+        ready_for_delivery: "Готов к доставке",
+        in_delivery: "В доставке",
+        completed: "Выполнен"
+      };
+
+      const statusText = document.createElement("p");
+      statusText.textContent =
+        "Статус: " + (statusNames[order.status] || order.status);
+      statusText.style.fontWeight = "bold";
+      card.appendChild(statusText);
+
+      const demoDeliveryLabels = {
+        demo_accepted: "Демо-доставка оформлена (тест)",
+        demo_in_delivery: "В пути (демо)",
+        demo_completed: "Демо-доставка завершена (тест)"
+      };
+      if (order.is_demo === 1 && demoDeliveryLabels[order.delivery_status]) {
+        const demoStatus = document.createElement("p");
+        demoStatus.textContent = demoDeliveryLabels[order.delivery_status];
+        demoStatus.style.cssText =
+          "font-weight:bold;color:#8a5a00;background:#fff3cd;" +
+          "padding:10px;border-radius:8px;";
+        card.appendChild(demoStatus);
+      }
+
+      const nextStatuses = {
+        new: "processing",
+        processing: "ready_for_delivery",
+        ready_for_delivery: "in_delivery",
+        in_delivery: "completed"
+      };
+
+      const buttonNames = {
+        new: "Взять в работу",
+        processing: "Готов к доставке",
+        ready_for_delivery: "Передать в доставку",
+        in_delivery: "Завершить заказ"
+      };
+
+      if (order.status === "ready_for_delivery") {
+        if (order.is_demo === 1 && order.delivery_status === "demo_accepted") {
+          addDemoDeliveryAction(
+            "В пути (демо)",
+            "/api/orders/" + encodeURIComponent(order.id) +
+              "/demo-delivery/in-delivery"
+          );
+        } else {
+          const deliveryConfirmed =
+            order.delivery_status === "accepted_by_yandex" &&
+            Boolean(order.provider_order_id);
+
+          if (!yandexDeliveryConnected || !deliveryConfirmed) {
+            const deliveryNotice = document.createElement("p");
+            deliveryNotice.textContent =
+              "Подключите Яндекс Доставку, чтобы отправить заказ курьеру";
+            deliveryNotice.style.marginTop = "12px";
+            card.appendChild(deliveryNotice);
+
+            const settingsLink = document.createElement("a");
+            settingsLink.href = "#delivery";
+            settingsLink.textContent = "Перейти к настройкам Яндекс Доставки";
+            settingsLink.style.cssText =
+              "display:inline-block;margin-top:6px;color:#2563eb;";
+            card.appendChild(settingsLink);
+          } else {
+            appendStatusButton();
+          }
+        }
+
+        if (order.delivery_status === "awaiting_yandex_connection" &&
+            !order.provider_order_id && order.is_demo !== 1) {
+          const demoDeliveryButton = document.createElement("button");
+          demoDeliveryButton.type = "button";
+          demoDeliveryButton.textContent = "Создать демо-доставку";
+          demoDeliveryButton.className = "button button-outline button-sm";
+          demoDeliveryButton.style.cssText = "margin-top:10px";
+          demoDeliveryButton.addEventListener("click", async () => {
+            demoDeliveryButton.disabled = true;
+            try {
+              const response = await fetch(
+                "/api/orders/" + encodeURIComponent(order.id) + "/demo-delivery",
+                { method: "POST" }
+              );
+              const result = await response.json();
+              if (!response.ok || !result.success || !result.demo) {
+                throw new Error(result.message || "Демо-доставка недоступна.");
+              }
+              await loadOrders();
+            } catch (error) {
+              alert(error.message);
+              demoDeliveryButton.disabled = false;
+            }
+          });
+          const demoDeliveryNote = document.createElement("p");
+          demoDeliveryNote.textContent =
+            "Тестовый режим: реальная доставка не оформляется.";
+          card.append(demoDeliveryButton, demoDeliveryNote);
+        }
+      } else if (order.status === "in_delivery" && order.is_demo === 1 &&
+                 order.delivery_status === "demo_in_delivery") {
+        addDemoDeliveryAction(
+          "Завершить демо-доставку",
+          "/api/orders/" + encodeURIComponent(order.id) +
+            "/demo-delivery/completed"
+        );
+      } else if (nextStatuses[order.status] && order.is_demo !== 1) {
+        appendStatusButton();
+      }
+
+      function addDemoDeliveryAction(label, url) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.className = "button button-gold button-sm";
+        button.style.cssText =
+          "margin-top:10px";
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try {
+            const response = await fetch(url, { method: "PATCH" });
+            const result = await response.json();
+            if (!response.ok || !result.success || !result.demo) {
+              throw new Error(result.message || "Демо-статус недоступен.");
+            }
+            await loadOrders();
+          } catch (error) {
+            alert(error.message);
+            button.disabled = false;
+          }
+        });
+        const notice = document.createElement("p");
+        notice.textContent =
+          "Демонстрационный статус: реальная доставка и курьер не подтверждены.";
+        notice.style.fontSize = "12px";
+        notice.style.color = "var(--muted)";
+        card.append(button, notice);
+      }
+
+      function appendStatusButton() {
+        const button = document.createElement("button");
+        button.type = "button";
+
+        const nextStatus = nextStatuses[order.status];
+        button.textContent = buttonNames[order.status];
+
+        button.className = "button button-primary button-sm";
+        button.style.cssText =
+          "margin-top:10px";
+
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          button.textContent = "Сохраняем...";
+
+          try {
+            const response = await fetch(
+              "/api/orders/" + order.id + "/status",
+              {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: nextStatus })
+              }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              throw new Error(result.message || "Не удалось изменить статус");
+            }
+
+            await Promise.all([loadOrders(), loadSellerFinance()]);
+
+          } catch (error) {
+            alert("Ошибка: " + error.message);
+            button.disabled = false;
+            button.textContent = buttonNames[order.status];
+          }
+        });
+
+        card.appendChild(button);
+      }
+
+      list.appendChild(card);
+    });
+
+  } catch (error) {
+    list.textContent = "Ошибка: " + error.message;
+  }
+}
+
+async function loadSellerFinance() {
+  const history = document.getElementById("financeHistory");
+  const money = value =>
+    new Intl.NumberFormat("ru-RU").format(Number(value) || 0) + " ₸";
+
+  try {
+    const response = await fetch("/api/seller/finance");
+    const result = await response.json();
+
+    if (!response.ok || !result.success || !result.summary ||
+        !Array.isArray(result.orders)) {
+      throw new Error(result.message || "Не удалось загрузить финансы.");
+    }
+
+    const summary = result.summary;
+    document.getElementById("financeSalesTotal").textContent =
+      money(summary.salesTotal);
+    document.getElementById("financeCommissionTotal").textContent =
+      money(summary.commissionTotal);
+    document.getElementById("financeSellerAmountTotal").textContent =
+      money(summary.sellerAmountTotal);
+    document.getElementById("financeOrderCount").textContent =
+      String(Number(summary.orderCount) || 0);
+    document.getElementById("financeClarificationCount").textContent =
+      String(Number(summary.clarificationCount) || 0);
+
+    history.replaceChildren();
+
+    if (result.orders.length === 0) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.style.padding = "12px";
+      cell.textContent = "История заказов пока пуста.";
+      row.appendChild(cell);
+      history.appendChild(row);
+      return;
+    }
+
+    result.orders.forEach(order => {
+      const row = document.createElement("tr");
+      const createdAt = order.created_at
+        ? new Date(order.created_at)
+        : null;
+      const dateText = createdAt && !Number.isNaN(createdAt.getTime())
+        ? createdAt.toLocaleString("ru-RU")
+        : (order.created_at || "—");
+      const values = [
+        "№" + order.id + (dateText ? " · " + dateText : ""),
+        money(order.total_amount),
+        order.commission_amount == null
+          ? "—"
+          : money(order.commission_amount),
+        order.seller_amount == null
+          ? "—"
+          : money(order.seller_amount),
+        order.financial_status || "Требует уточнения"
+      ];
+
+      values.forEach((value, index) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        cell.style.padding = "10px";
+        cell.style.borderBottom = "1px solid var(--line-soft)";
+        if (index === 1 || index === 2 || index === 3) {
+          cell.style.textAlign = "right";
+        }
+        row.appendChild(cell);
+      });
+
+      history.appendChild(row);
+    });
+  } catch (error) {
+    [
+      "financeSalesTotal",
+      "financeCommissionTotal",
+      "financeSellerAmountTotal",
+      "financeOrderCount",
+      "financeClarificationCount"
+    ].forEach(id => {
+      document.getElementById(id).textContent = "—";
+    });
+
+    history.replaceChildren();
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 5;
+    cell.style.padding = "12px";
+    cell.textContent = "Ошибка загрузки финансов: " + error.message;
+    row.appendChild(cell);
+    history.appendChild(row);
+  }
+}
+
+async function loadSellerCommissionProposal() {
+  const section = document.getElementById("sellerCommissionProposal");
+  const message = document.getElementById("sellerCommissionProposalMessage");
+
+  try {
+    const response = await fetch("/api/seller/commission-proposal");
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Не удалось загрузить предложение.");
+    }
+
+    const currentRate = Number(result.currentRateBps) / 100;
+    document.getElementById("sellerCommissionCurrentRate").textContent =
+      "Текущая комиссия: " + currentRate.toFixed(2) + "%.";
+    currentCommissionProposalId = result.proposal?.id || null;
+    section.style.display = "block";
+
+    if (result.proposal) {
+      const oldRate = Number(result.proposal.old_rate_bps) / 100;
+      const newRate = Number(result.proposal.new_rate_bps) / 100;
+      document.getElementById("sellerCommissionProposalText").textContent =
+        "Предложение: изменить ставку с " + oldRate.toFixed(2) + "% на " +
+        newRate.toFixed(2) + "%. Новая ставка применяется только к новым заказам после вашего согласия.";
+      document.getElementById("acceptCommissionProposal").hidden = false;
+      document.getElementById("rejectCommissionProposal").hidden = false;
+    } else {
+      document.getElementById("sellerCommissionProposalText").textContent =
+        "Активных предложений об изменении комиссии нет.";
+      document.getElementById("acceptCommissionProposal").hidden = true;
+      document.getElementById("rejectCommissionProposal").hidden = true;
+    }
+  } catch (error) {
+    section.style.display = "block";
+    message.textContent = "Ошибка загрузки предложения: " + error.message;
+  }
+}
+
+async function decideSellerCommissionProposal(decision) {
+  if (!currentCommissionProposalId) return;
+
+  const acceptButton = document.getElementById("acceptCommissionProposal");
+  const rejectButton = document.getElementById("rejectCommissionProposal");
+  const message = document.getElementById("sellerCommissionProposalMessage");
+  acceptButton.disabled = true;
+  rejectButton.disabled = true;
+  message.textContent = "Сохраняем решение...";
+
+  try {
+    const response = await fetch(
+      "/api/seller/commission-proposals/" +
+      encodeURIComponent(currentCommissionProposalId) + "/decision",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      }
+    );
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Не удалось сохранить решение.");
+    }
+
+    await loadSellerCommissionProposal();
+    message.textContent = decision === "accepted"
+      ? "Предложение принято. Новая ставка применяется к новым заказам."
+      : "Вы отказались от новой ставки. Текущая комиссия сохранена.";
+  } catch (error) {
+    await loadSellerCommissionProposal();
+    message.textContent = error.message;
+  } finally {
+    acceptButton.disabled = false;
+    rejectButton.disabled = false;
+  }
+}
+
+function updatePaymentIdentifierLabel() {
+  const isIndividual =
+    document.getElementById("paymentBusinessType").value === "ip";
+  const label = document.getElementById("paymentIdentifierLabel");
+  const input = document.getElementById("paymentBusinessIdentifier");
+  label.textContent = isIndividual ? "ИИН" : "БИН";
+  input.setAttribute(
+    "aria-label",
+    isIndividual ? "ИИН, 12 цифр" : "БИН, 12 цифр"
+  );
+}
+
+async function loadPaymentDetails() {
+  const message = document.getElementById("paymentDetailsMessage");
+  try {
+    const response = await fetch("/api/seller/payment-details");
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Не удалось загрузить реквизиты.");
+    }
+
+    const details = result.paymentDetails;
+    if (details) {
+      document.getElementById("paymentBusinessType").value =
+        details.business_type;
+      document.getElementById("paymentBusinessIdentifier").value =
+        details.business_identifier;
+      document.getElementById("paymentBankName").value = details.bank_name;
+      document.getElementById("paymentIban").value = details.iban;
+      document.getElementById("savePaymentDetails").textContent =
+        "Обновить реквизиты";
+      paymentDetailsDemoMode = details.is_demo === 1 ||
+        details.is_demo === true;
+      message.textContent = paymentDetailsDemoMode
+        ? "Тестовые реквизиты — реальные платежи невозможны"
+        : "Сохранено: " + details.updated_at;
+    } else {
+      paymentDetailsDemoMode = false;
+      message.textContent = "Реквизиты ещё не сохранены.";
+    }
+    updatePaymentIdentifierLabel();
+  } catch (error) {
+    message.textContent = "Ошибка загрузки реквизитов: " + error.message;
+  }
+}
+
+document.getElementById("paymentBusinessType")
+  ?.addEventListener("change", () => {
+    updatePaymentIdentifierLabel();
+    if (paymentDetailsDemoMode) {
+      paymentDetailsDemoMode = false;
+      document.getElementById("paymentDetailsMessage").textContent =
+        "Демо-поля изменены. При сохранении данные будут записаны как обычные реквизиты после проверки.";
+    }
+  });
+
+document.getElementById("fillDemoPaymentDetails")
+  ?.addEventListener("click", () => {
+    document.getElementById("paymentBusinessType").value = "ip";
+    document.getElementById("paymentBusinessIdentifier").value =
+      "000000000000";
+    document.getElementById("paymentBankName").value = "DEMO ONLY - NOT A BANK";
+    document.getElementById("paymentIban").value = "KZ000000000000000000";
+    paymentDetailsDemoMode = true;
+    updatePaymentIdentifierLabel();
+    document.getElementById("paymentDetailsMessage").textContent =
+      "Вымышленные тестовые данные заполнены. Нажмите «Сохранить реквизиты», чтобы записать их с пометкой DEMO. Реальные платежи невозможны.";
+  });
+
+[
+  "paymentBusinessIdentifier",
+  "paymentBankName",
+  "paymentIban"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    if (!paymentDetailsDemoMode) return;
+    paymentDetailsDemoMode = false;
+    document.getElementById("paymentDetailsMessage").textContent =
+      "Демо-поля изменены. При сохранении данные будут записаны как обычные реквизиты после проверки.";
+  });
+});
+
+document.getElementById("sellerPaymentDetailsForm")
+  ?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = document.getElementById("savePaymentDetails");
+    const message = document.getElementById("paymentDetailsMessage");
+    const data = {
+      business_type: document.getElementById("paymentBusinessType").value,
+      business_identifier: document.getElementById("paymentBusinessIdentifier").value.trim(),
+      bank_name: document.getElementById("paymentBankName").value.trim(),
+      iban: document.getElementById("paymentIban").value.replace(/\s+/g, "").toUpperCase(),
+      is_demo: paymentDetailsDemoMode
+    };
+
+    if (!/^\d{12}$/.test(data.business_identifier)) {
+      message.textContent = "ИИН/БИН должен содержать ровно 12 цифр.";
+      return;
+    }
+    if (!/^KZ\d{18}$/.test(data.iban)) {
+      message.textContent = "IBAN: KZ и далее 18 цифр.";
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = "Сохраняем реквизиты...";
+    try {
+      const response = await fetch("/api/seller/payment-details", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Не удалось сохранить реквизиты.");
+      }
+      paymentDetailsDemoMode = result.paymentDetails?.is_demo === true;
+      message.textContent = paymentDetailsDemoMode
+        ? "Тестовые реквизиты — реальные платежи невозможны"
+        : result.message;
+      button.textContent = "Обновить реквизиты";
+    } catch (error) {
+      message.textContent = "Ошибка: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+document.getElementById("acceptCommissionProposal")
+  ?.addEventListener("click", () => {
+    decideSellerCommissionProposal("accepted");
+  });
+
+document.getElementById("rejectCommissionProposal")
+  ?.addEventListener("click", () => {
+    decideSellerCommissionProposal("rejected");
+  });
+
+document.getElementById("refreshOrders")
+  ?.addEventListener("click", () => {
+    Promise.all([
+      loadOrders(),
+      loadSellerFinance(),
+      loadSellerCommissionProposal(),
+      loadPaymentDetails()
+    ]);
+  });
+
+loadOrders();
+loadSellerFinance();
+loadSellerCommissionProposal();
+loadPaymentDetails();
+
+document.getElementById("savePickupAddress")
+  ?.addEventListener("click", async function () {
+    const button = this;
+    const input = document.getElementById("pickupAddress");
+    const message = document.getElementById("pickupAddressMessage");
+    const address = input.value.trim();
+
+    if (address.length < 5 || address.length > 300) {
+      message.textContent = "Укажите адрес от 5 до 300 символов";
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = "Сохраняем...";
+
+    try {
+      const response = await fetch("/api/me/pickup-address", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          pickup_address: address
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Ошибка сохранения");
+      }
+
+      message.textContent = "Адрес склада успешно сохранён!";
+      if (currentCompany) {
+        currentCompany.pickup_address = result.pickup_address;
+      }
+
+    } catch (error) {
+      message.textContent = "Ошибка: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+async function loadDashboard() {
+  try {
+    const response = await fetch("/api/me");
+
+    if (response.status === 401) {
+      window.location.replace("/login.html");
+      return;
+    }
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success || !result.company) {
+      throw new Error("Ошибка загрузки аккаунта");
+    }
+
+    currentCompany = result.company;
+    document.getElementById("pickupAddress").value =
+      currentCompany.pickup_address || "";
+    const pickupAddressInput = document.getElementById("pickupAddress");
+
+    if (pickupAddressInput) {
+      pickupAddressInput.value = currentCompany.pickup_address || "";
+    }
+    welcome.textContent =
+      "Здравствуйте, " +
+      currentCompany.company_name + "!";
+
+    companyInfo.textContent =
+      "Город: " + currentCompany.city +
+      " | Почта: " + currentCompany.email;
+
+    dashboardContent.hidden = false;
+
+    await loadMyProducts(currentCompany);
+
+  } catch (error) {
+    welcome.textContent = "Не удалось загрузить кабинет";
+    companyInfo.textContent =
+      "Проверьте соединение с сервером и обновите страницу.";
+    companyInfo.className = "subtitle error";
+    console.error(error);
+  }
+}
+
+document.getElementById("logoutButton")
+  ?.addEventListener("click", async () => {
+    try {
+      const response = await fetch("/logout", {
+        method: "POST"
+      });
+
+      if (!response.ok) {
+        throw new Error("Ошибка выхода");
+      }
+
+      window.location.replace("/login.html");
+
+    } catch (error) {
+      alert("Не удалось выйти из аккаунта.");
+    }
+  });
+
+loadDashboard();
+</script>
+
+<section id="deliverySettings" style="max-width:700px;margin:30px auto;padding:25px;border:1px solid var(--line);border-radius:var(--radius);background:var(--white)">
+  <h2 style="font-size:20px">🚚 Настройки Яндекс Доставки</h2>
+  <p style="color:var(--muted);font-size:13px">Подключите доставку для вашего мебельного магазина.</p>
+  <div class="field-group">
+    <label class="field-label" for="yandexApiKey">API-ключ Яндекс Доставки</label>
+    <input type="password" id="yandexApiKey" class="field-control" placeholder="Введите API-ключ" autocomplete="off">
+  </div>
+  <div class="field-group" style="margin-top:16px">
+    <label class="field-label" for="pickupCity">Город отправления мебели</label>
+    <input type="text" id="pickupCity" class="field-control" placeholder="Например: Алматы">
+  </div>
+  <div class="field-group" style="margin-top:12px">
+    <label class="field-label" for="companyPickupAddress">Адрес склада или производства</label>
+    <input type="text" id="companyPickupAddress" class="field-control" placeholder="Улица, дом, номер помещения">
+  </div>
+  <fieldset style="margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-soft)">
+    <legend style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-dark);padding:0 8px">Плательщик доставки</legend>
+    <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-weight:normal;color:var(--graphite-soft);font-size:13px"><input type="radio" name="deliveryPaymentBy" value="seller" checked style="width:auto;margin:0"> Оплачивает продавец</label>
+    <label style="display:flex;align-items:center;gap:8px;margin:8px 0;font-weight:normal;color:var(--graphite-soft);font-size:13px"><input type="radio" name="deliveryPaymentBy" value="buyer" style="width:auto;margin:0"> Оплачивает покупатель</label>
+    <p class="hint" style="margin-bottom:0;font-size:11px;color:var(--muted)">Внутренняя настройка FORMA; она сама по себе не меняет способ списания средств Яндексом.</p>
+  </fieldset>
+  <p style="font-size:13px;color:var(--muted);margin-top:10px">У каждого магазина будет собственный API-ключ.</p>
+  <button type="button" id="saveYandexKey" class="button button-primary button-sm" style="margin-top:10px">Подключить Яндекс Доставку</button>
+  <button type="button" id="disconnectYandexKey" class="button button-outline button-sm" style="margin-top:8px">Отключить Яндекс Доставку</button>
+  <button type="button" id="saveCompanyPickupAddress" class="button button-primary button-sm" style="margin-top:10px">Сохранить адрес склада</button>
+  <p id="yandexKeyMessage" class="message" role="status" style="margin-top:10px"></p>
+</section>
+
+<script>
+document.getElementById("saveYandexKey").addEventListener("click", async function () {
+  const button = this;
+  const input = document.getElementById("yandexApiKey");
+  const message = document.getElementById("yandexKeyMessage");
+  const apiKey = input.value.trim();
+
+  if (apiKey.length < 10) {
+    message.textContent = "Введите API-ключ Яндекс Доставки.";
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = "Сохраняем настройки...";
+
+  try {
+    const response = await fetch("/api/yandex-settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ apiKey })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Ошибка сохранения");
+    }
+
+    input.value = "";
+    message.textContent = "API-ключ сохранён в настройках магазина.";
+
+  } catch (error) {
+    message.textContent = "Ошибка: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+
+<script>
+document.getElementById("disconnectYandexKey").addEventListener("click", async function () {
+  const confirmed = confirm("Вы уверены, что хотите отключить Яндекс Доставку?");
+
+  if (!confirmed) return;
+
+  const button = this;
+  const message = document.getElementById("yandexKeyMessage");
+
+  button.disabled = true;
+  message.textContent = "Отключаем Яндекс Доставку...";
+
+  try {
+    const response = await fetch("/api/yandex-settings", {
+      method: "DELETE"
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Ошибка отключения");
+    }
+
+    document.getElementById("yandexApiKey").value = "";
+    message.textContent = "Яндекс Доставка отключена.";
+
+  } catch (error) {
+    message.textContent = "Ошибка: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+
+<script>
+document.getElementById("saveCompanyPickupAddress").addEventListener("click", async function () {
+  const button = this;
+  const message = document.getElementById("yandexKeyMessage");
+
+  const pickupCity = document.getElementById("pickupCity").value.trim();
+  const pickupAddress = document.getElementById("companyPickupAddress")?.value?.trim() || "";
+
+  if (pickupCity.length < 2 || pickupAddress.length < 5) {
+    message.textContent = "Укажите город и полный адрес склада.";
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = "Сохраняем адрес склада...";
+
+  try {
+    const response = await fetch("/api/yandex-settings/pickup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        pickupCity,
+        pickupAddress
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Ошибка сохранения");
+    }
+
+    message.textContent = "Адрес склада успешно сохранён.";
+
+  } catch (error) {
+    message.textContent = "Ошибка: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+
+<script>
+(async function loadPickupSettings() {
+  const paymentByControls = Array.from(
+    document.querySelectorAll('input[name="deliveryPaymentBy"]')
+  );
+  let savedPaymentBy = "seller";
+
+  paymentByControls.forEach(control => {
+    control.addEventListener("change", async event => {
+      const selectedPaymentBy = event.target.value;
+      const message = document.getElementById("yandexKeyMessage");
+
+      if (selectedPaymentBy === savedPaymentBy) return;
+
+      paymentByControls.forEach(input => { input.disabled = true; });
+      message.textContent = "Сохраняем плательщика доставки...";
+
+      try {
+        const response = await fetch("/api/yandex-settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentBy: selectedPaymentBy })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Ошибка сохранения");
+        }
+        savedPaymentBy = selectedPaymentBy;
+        message.textContent = "Плательщик доставки сохранён.";
+      } catch (error) {
+        message.textContent = "Ошибка: " + error.message;
+      } finally {
+        paymentByControls.forEach(input => { input.disabled = false; });
+      }
+    });
+  });
+})();
+
+// Выход продавца
+document.getElementById("logoutButton").addEventListener("click", async () => {
+  try {
+    const response = await fetch("/logout", { method: "POST", credentials: "same-origin" });
+    if (response.ok) location.href = "/";
+  } catch (error) {
+    console.error("Ошибка выхода:", error);
+  }
+});
+</script>
+
+</body>
+</html>

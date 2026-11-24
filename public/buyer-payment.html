@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Оплата заказа — FORMA MARKETPLACE</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.payment-page { max-width: 600px; margin: 0 auto; padding: 0 20px; }
+.payment-card {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--white); padding: 40px; text-align: center;
+}
+.payment-icon { font-size: 56px; margin-bottom: 20px; display: block; }
+.payment-title { font-size: 24px; margin-bottom: 12px; color: var(--graphite); }
+.payment-subtitle { font-size: 15px; color: var(--muted); margin-bottom: 24px; }
+.payment-notice {
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface-soft); padding: 20px; text-align: left;
+  margin-bottom: 24px;
+}
+.payment-notice h4 { margin: 0 0 10px; font-size: 14px; color: var(--graphite-soft); text-transform: uppercase; letter-spacing: 0.1em; }
+.payment-notice p { font-size: 13px; color: var(--graphite); margin: 4px 0; line-height: 1.6; }
+.payment-notice strong { color: var(--gold-dark); }
+.order-list { text-align: left; margin-bottom: 24px; font-size: 13px; color: var(--graphite-soft); }
+.order-list-item { padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.btn-group { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 480px) {
+  .payment-card { padding: 24px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topline">Оплата заказа · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <a class="button-ghost" href="/catalog.html">В каталог</a>
+  <a class="button-ghost" href="/buyer-account.html">Кабинет покупателя</a>
+  <div class="header-actions"></div>
+</div></header>
+
+<main class="payment-page">
+  <div class="payment-card">
+    <span class="payment-icon" aria-hidden="true">💳</span>
+    <h2 class="payment-title">Оплата заказа</h2>
+    <p class="payment-subtitle">Список ваших заказов и сумма к оплате</p>
+
+    <div class="order-list" id="orderList"></div>
+
+    <div class="payment-notice">
+      <h4>Информация об оплате</h4>
+      <p><strong>Платёжная система пока не подключена.</strong></p>
+      <p>FORMA MARKETPLACE готова к подключению Kaspi Pay и банковских карт.</p>
+      <p>Оплата должна подтверждаться сервером через проверенное уведомление платёжного провайдера.</p>
+      <p>Заказы созданы со статусом <strong>«Ожидает оплаты»</strong> и видны в кабинете продавца.</p>
+    </div>
+
+    <div class="btn-group">
+      <a href="/catalog.html" class="button button-outline">Вернуться в каталог</a>
+      <a href="/buyer-account.html" class="button button-ghost">Перейти в кабинет покупателя</a>
+    </div>
+  </div>
+</main>
+
+<script>
+(async()=>{
+const list=document.getElementById("orderList");
+try {
+ const ids=new Set((new URLSearchParams(location.search).get("orders")||"").split(",").map(Number));
+ const r=await fetch("/api/buyer/orders"); if(r.status===401){location.href="/buyer-account.html";return;}
+ const data=await r.json(); if(!r.ok||!data.success)throw Error();
+ const orders=data.orders.filter(o=>ids.has(o.id)); let total=0;
+ for(const o of orders){const div=document.createElement("div");div.className="order-list-item";div.textContent="Заказ №"+o.id+" · "+new Intl.NumberFormat("ru-KZ").format(o.total_amount)+" ₸";list.append(div);total+=Number(o.total_amount);}
+ const row=document.createElement("div");row.textContent=orders.length?"Итого: "+new Intl.NumberFormat("ru-KZ").format(total)+" ₸":"Заказы не найдены. Откройте историю заказов.";list.append(row);
+}catch{list.textContent="Не удалось загрузить заказы.";}
+})();
+</script></body></html>

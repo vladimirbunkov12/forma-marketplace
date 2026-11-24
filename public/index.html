@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <meta name="description" content="FORMA MARKETPLACE — мебель от производителей Казахстана. Найдите кухни, шкафы, диваны, кровати и столы в одном каталоге.">
+  <title>FORMA MARKETPLACE — мебель с характером</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Мебель казахстанских производителей · Один каталог · Прямой контакт</div>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Основная навигация">
+        <a href="/catalog.html">Каталог</a>
+        <a href="#categories">Категории</a>
+        <a href="#companies">Производители</a>
+        <a href="#about">О FORMA</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-outline" href="/auth-choice.html">Войти</a>
+        <a class="button button-ghost" href="/buyer-account.html">Кабинет покупателя</a>
+        <a class="button button-outline" href="/buyer-cart.html">Корзина <span class="cart-badge" id="headerCartCount">0</span></a>
+        <a class="button button-primary" href="/register.html">Стать продавцом</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap" aria-labelledby="heroTitle">
+      <div class="hero-panel">
+        <div class="hero-copy">
+          <div class="eyebrow">Дом начинается с деталей</div>
+          <h1 id="heroTitle">Мебель с <em>характером.</em><br>Рядом с вами.</h1>
+          <p>Откройте мебель от производителей Казахстана. Выбирайте стиль, сравнивайте предложения и связывайтесь с продавцами напрямую.</p>
+          <form id="homeSearch" class="search-form" role="search">
+            <svg class="search-icon icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <input id="homeSearchInput" type="search" placeholder="Например, диван или кухня" aria-label="Поиск мебели">
+            <button class="button button-gold" type="submit">Найти мебель <span aria-hidden="true">→</span></button>
+          </form>
+          <div class="hero-links">
+            <a class="button-ghost" href="/catalog.html">Смотреть весь каталог</a>
+            <a class="button-ghost" href="/login.html">Уже продаёте? Войти в кабинет</a>
+          </div>
+        </div>
+        <div class="hero-art" aria-label="Актуальное предложение из каталога">
+          <img id="heroProductImage" class="hero-photo" alt="" hidden>
+          <div class="hero-art-caption">
+            <div><span id="heroProductEyebrow">FORMA · Казахстан</span><strong id="heroProductCaption">Пространство для вашего стиля</strong></div>
+            <div class="hero-index" id="heroProductIndex">01 / 01</div>
+          </div>
+        </div>
+      </div>
+      <div class="proof-row" aria-label="О платформе">
+        <div class="proof-item"><span class="proof-dot"></span><span>Производители Казахстана</span></div>
+        <div class="proof-item"><span class="proof-dot"></span><span>Товары из реального каталога</span></div>
+        <div class="proof-item"><span class="proof-dot"></span><span>Контакт напрямую с продавцом</span></div>
+      </div>
+    </section>
+
+    <section class="section-tight wrap" id="categories" aria-labelledby="categoriesTitle">
+      <div class="section-heading">
+        <div><div class="eyebrow">Выберите направление</div><h2 id="categoriesTitle">Найдите своё</h2></div>
+        <p>От функциональных решений для кухни до мягких акцентов в гостиной — начните с категории.</p>
+      </div>
+      <div class="category-grid">
+        <button class="category-card" type="button" data-category="Кухни" aria-pressed="false">
+          <span class="category-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v3h6v6M3 12h18M5 19h14"/></svg></span><span class="category-label">Кухни <span class="category-arrow">↗</span></span>
+        </button>
+        <button class="category-card" type="button" data-category="Шкафы" aria-pressed="false">
+          <span class="category-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v9M15 3v9M3 12h18"/></svg></span><span class="category-label">Шкафы <span class="category-arrow">↗</span></span>
+        </button>
+        <button class="category-card" type="button" data-category="Гардеробные" aria-pressed="false">
+          <span class="category-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v8M16 4v8M4 12h16"/></svg></span><span class="category-label">Гардеробные <span class="category-arrow">↗</span></span>
+        </button>
+        <button class="category-card" type="button" data-category="Диваны" aria-pressed="false">
+          <span class="category-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 6h12M6 18h12"/></svg></span><span class="category-label">Диваны <span class="category-arrow">↗</span></span>
+        </button>
+        <button class="category-card" type="button" data-category="Кровати" aria-pressed="false">
+          <span class="category-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M8 21v-6M16 21v-6"/></svg></span><span class="category-label">Кровати <span class="category-arrow">↗</span></span>
+        </button>
+        <button class="category-card" type="button" data-category="Столы" aria-pressed="false">
+          <span class="category-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18M10 3v18M14 3v18"/></svg></span><span class="category-label">Столы <span class="category-arrow">↗</span></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section products-section wrap" id="products" aria-labelledby="productsTitle">
+      <div class="section-heading">
+        <div><div class="eyebrow">Предложения производителей</div><h2 id="productsTitle">Популярные товары</h2></div>
+        <a class="button-ghost" href="/catalog.html">Весь каталог <span aria-hidden="true">→</span></a>
+      </div>
+      <p class="result-note muted" id="productsNote">Актуальные товары загружаются из каталога. Карточки не являются рейтингом продаж.</p>
+      <div class="products-grid" id="homeProducts" aria-live="polite">
+        <div class="empty-state">Загружаем предложения производителей…</div>
+      </div>
+    </section>
+
+    <section class="section-tight wrap" id="companies" aria-labelledby="companiesTitle">
+      <div class="section-heading">
+        <div><div class="eyebrow">Создано в Казахстане</div><h2 id="companiesTitle">Мебельные компании</h2></div>
+        <p>Здесь показаны компании, у которых уже есть опубликованные товары в каталоге.</p>
+      </div>
+      <div class="company-grid" id="homeCompanies" aria-live="polite">
+        <div class="empty-state">Загружаем производителей…</div>
+      </div>
+    </section>
+
+    <section class="seller-banner wrap" id="partners" aria-labelledby="sellerTitle">
+      <div class="seller-banner-copy">
+        <div class="eyebrow">Для мебельных брендов</div>
+        <h2 id="sellerTitle">Пусть ваши работы найдут свой дом.</h2>
+        <p>Создайте страницу компании, добавьте товары и получайте обращения покупателей через FORMA MARKETPLACE.</p>
+      </div>
+      <div class="seller-banner-action"><a class="button button-gold" href="/register.html">Стать продавцом <span aria-hidden="true">→</span></a></div>
+    </section>
+
+    <section class="about-row wrap" id="about" aria-labelledby="aboutTitle">
+      <div><div class="eyebrow">FORMA MARKETPLACE</div><h2 id="aboutTitle">Больше выбора.<br>Ближе к дому.</h2></div>
+      <p class="about-copy">FORMA — мебельная площадка, которая объединяет покупателей и производителей Казахстана. Изучайте реальные предложения в каталоге, находите подходящие решения и обращайтесь к продавцам напрямую. Каталог пополняется компаниями по мере публикации товаров.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-main">
+        <div class="footer-brand">
+          <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+          <p>Мебель казахстанских производителей — в одном каталоге.</p>
+        </div>
+        <nav class="footer-links" aria-label="Навигация в подвале">
+          <a href="/catalog.html">Каталог</a>
+          <a href="/register.html">Стать продавцом</a>
+          <a href="/login.html">Войти</a>
+          <a href="#about">О платформе</a>
+        </nav>
+      </div>
+      <div class="footer-bottom"><span>FORMA MARKETPLACE © 2026</span><span>Сделано для дома и жизни в Казахстане</span></div>
+    </div>
+  </footer>
+
+  <script>
+    const productGrid = document.getElementById("homeProducts");
+    const companyGrid = document.getElementById("homeCompanies");
+    const productsNote = document.getElementById("productsNote");
+    const searchForm = document.getElementById("homeSearch");
+    const searchInput = document.getElementById("homeSearchInput");
+    const heroImage = document.getElementById("heroProductImage");
+    const heroCaption = document.getElementById("heroProductCaption");
+    const heroEyebrow = document.getElementById("heroProductEyebrow");
+    const heroIndex = document.getElementById("heroProductIndex");
+
+    let publishedProducts = [];
+    let activeCategory = "";
+    let activeQuery = "";
+
+    function makeElement(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined && text !== null) element.textContent = text;
+      return element;
+    }
+
+    function showEmpty(container, message) {
+      container.replaceChildren(makeElement("div", "empty-state", message));
+    }
+
+    function safeProductImage(value) {
+      if (typeof value !== "string" || !value.trim()) return null;
+      try {
+        const url = new URL(value, window.location.origin);
+        if (url.origin !== window.location.origin || !url.pathname.startsWith("/uploads/")) {
+          return null;
+        }
+        return url.href;
+      } catch {
+        return null;
+      }
+    }
+
+    function formatPrice(value) {
+      const price = Number(value);
+      if (!Number.isSafeInteger(price) || price <= 0) return "Цена по запросу";
+      return new Intl.NumberFormat("ru-KZ").format(price) + " ₸";
+    }
+
+    function productCountLabel(count) {
+      const lastTwo = count % 100;
+      const last = count % 10;
+      if (lastTwo >= 11 && lastTwo <= 14) return "товаров";
+      if (last === 1) return "товар";
+      if (last >= 2 && last <= 4) return "товара";
+      return "товаров";
+    }
+
+    function renderProductCard(product) {
+      const card = makeElement("article", "product-card card");
+      const imageWrap = makeElement("div", "product-image-wrap");
+      const imageUrl = safeProductImage(product.photoUrl);
+
+      if (imageUrl) {
+        const image = makeElement("img", "product-image");
+        image.src = imageUrl;
+        image.alt = product.name || "Мебель из каталога FORMA";
+        image.loading = "lazy";
+        image.onerror = () => {
+          image.replaceWith(makeElement("div", "product-image-placeholder", "Фото недоступно"));
+        };
+        imageWrap.appendChild(image);
+      } else {
+        imageWrap.appendChild(makeElement("div", "product-image-placeholder", "Фото недоступно"));
+      }
+
+      imageWrap.appendChild(makeElement("span", "product-category", product.category || "Мебель"));
+      const info = makeElement("div", "product-info");
+      info.appendChild(makeElement("h3", "", product.name || "Товар из каталога"));
+      info.appendChild(makeElement("div", "product-maker", product.company_name || "Производитель Казахстана"));
+      const bottom = makeElement("div", "product-bottom");
+      bottom.appendChild(makeElement("span", "product-price", formatPrice(product.price)));
+      bottom.appendChild(makeElement("span", "product-city", product.city || "Казахстан"));
+      info.appendChild(bottom);
+      card.append(imageWrap, info);
+      return card;
+    }
+
+    function renderProducts() {
+      let matches = publishedProducts;
+      if (activeCategory) {
+        matches = matches.filter(product => product.category === activeCategory);
+      }
+      if (activeQuery) {
+        const query = activeQuery.toLocaleLowerCase("ru-RU");
+        matches = matches.filter(product => [
+          product.name,
+          product.category,
+          product.description,
+          product.company_name,
+          product.city
+        ].some(value => String(value || "").toLocaleLowerCase("ru-RU").includes(query)));
+      }
+
+      const isFiltering = Boolean(activeCategory || activeQuery);
+      const visibleProducts = isFiltering ? matches : matches.slice(0, 6);
+      document.getElementById("productsTitle").textContent = isFiltering
+        ? "Результаты поиска"
+        : "Популярные товары";
+      productsNote.textContent = isFiltering
+        ? "Найдено в опубликованных товарах: " + matches.length + "."
+        : "Актуальные товары загружаются из каталога. Карточки не являются рейтингом продаж.";
+
+      productGrid.replaceChildren();
+      if (!visibleProducts.length) {
+        showEmpty(productGrid, publishedProducts.length
+          ? "По вашему запросу товаров пока нет. Попробуйте другую категорию или посмотрите весь каталог."
+          : "В каталоге пока нет опубликованных товаров. Загляните позже — производители добавляют новые предложения.");
+        return;
+      }
+
+      visibleProducts.forEach(product => productGrid.appendChild(renderProductCard(product)));
+    }
+
+    function renderCompanies() {
+      const companies = new Map();
+      publishedProducts.forEach(product => {
+        const key = product.company_id != null
+          ? String(product.company_id)
+          : String(product.company_name || "") + "|" + String(product.city || "");
+        if (!key || key === "|") return;
+        if (!companies.has(key)) {
+          companies.set(key, {
+            name: product.company_name || "Мебельная компания",
+            city: product.city || "Казахстан",
+            count: 0
+          });
+        }
+        companies.get(key).count += 1;
+      });
+
+      companyGrid.replaceChildren();
+      const entries = Array.from(companies.values()).slice(0, 6);
+      if (!entries.length) {
+        showEmpty(companyGrid, "Пока нет компаний с опубликованными товарами. Информация появится здесь после размещения реальных предложений.");
+        return;
+      }
+
+      entries.forEach(company => {
+        const card = makeElement("article", "card card-padded");
+        card.style.display = "flex";
+        card.style.alignItems = "center";
+        card.style.gap = "14px";
+        const initial = Array.from(company.name.trim())[0] || "F";
+        card.appendChild(makeElement("span", "company-monogram", initial.toLocaleUpperCase("ru-RU")));
+
+        const details = makeElement("div", "");
+        details.appendChild(makeElement("h3", "", company.name));
+        details.appendChild(makeElement("p", "", company.city + " · " + company.count + " " + productCountLabel(company.count) + " в каталоге"));
+        card.appendChild(details);
+        companyGrid.appendChild(card);
+      });
+    }
+
+    function renderHeroProduct() {
+      const featured = publishedProducts.find(product => safeProductImage(product.photoUrl));
+      if (!featured) return;
+      heroImage.src = safeProductImage(featured.photoUrl);
+      heroImage.alt = featured.name || "Предложение из каталога FORMA";
+      heroImage.hidden = false;
+      heroCaption.textContent = featured.name || "Предложение из каталога";
+      heroEyebrow.textContent = [featured.company_name, featured.city]
+        .filter(Boolean)
+        .join(" · ") || "Предложение из каталога FORMA";
+      heroIndex.textContent = "01 / " + String(publishedProducts.length).padStart(2, "0");
+      heroImage.onerror = () => { heroImage.hidden = true; };
+    }
+
+    async function loadPublishedProducts() {
+      try {
+        const response = await fetch("/api/products");
+        if (!response.ok) throw new Error("Не удалось загрузить каталог.");
+        const result = await response.json();
+        if (!result.success || !Array.isArray(result.products)) {
+          throw new Error("Сервер вернул некорректный список товаров.");
+        }
+        publishedProducts = result.products.filter(product => product && product.id != null);
+        renderProducts();
+        renderCompanies();
+        renderHeroProduct();
+      } catch (error) {
+        publishedProducts = [];
+        renderProducts();
+        renderCompanies();
+        productsNote.textContent = "Не удалось получить актуальные предложения с сервера.";
+        console.error("Ошибка загрузки главной страницы:", error);
+      }
+    }
+
+    searchForm.addEventListener("submit", event => {
+      event.preventDefault();
+      activeQuery = searchInput.value.trim();
+      activeCategory = "";
+      document.querySelectorAll(".category-card").forEach(card => {
+        card.setAttribute("aria-pressed", "false");
+      });
+      renderProducts();
+      document.getElementById("products").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    searchInput.addEventListener("input", () => {
+      if (searchInput.value.trim()) return;
+      activeQuery = "";
+      renderProducts();
+    });
+
+    document.querySelectorAll(".category-card").forEach(card => {
+      card.addEventListener("click", () => {
+        const selected = card.getAttribute("aria-pressed") === "true";
+        document.querySelectorAll(".category-card").forEach(item => {
+          item.setAttribute("aria-pressed", "false");
+        });
+        activeCategory = selected ? "" : card.dataset.category || "";
+        activeQuery = "";
+        searchInput.value = "";
+        if (!selected) card.setAttribute("aria-pressed", "true");
+        renderProducts();
+        document.getElementById("products").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    loadPublishedProducts();
+
+    // Обновление счётчика корзины в шапке
+    async function updateCartBadge() {
+      try {
+        const response = await fetch("/api/buyer/cart/count", { credentials: "same-origin" });
+        if (response.ok) {
+          const data = await response.json();
+          const badge = document.getElementById("headerCartCount");
+          if (badge) badge.textContent = data.count || 0;
+        }
+      } catch {}
+    }
+    updateCartBadge();
+  </script>
+<script>
+(async function(){
+ const header=document.querySelector('.header-actions'); if(!header)return;
+ const login=header.querySelector('a[href="/auth-choice.html"]');
+ const account=header.querySelector('a[href="/buyer-account.html"]');
+ const cart=header.querySelector('a[href="/buyer-cart.html"]');
+ const register=header.querySelector('a[href="/register.html"]');
+ try {
+  const buyer=await fetch('/api/buyer/me',{credentials:'same-origin',cache:'no-store'});
+  if(buyer.ok && (await buyer.json()).success){if(login)login.hidden=true;if(register)register.hidden=true;return;}
+  const seller=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'});
+  if(seller.ok){if(login){login.href='/dashboard.html';login.textContent='Кабинет продавца';}if(account)account.hidden=true;if(cart)cart.hidden=true;if(register)register.hidden=true;}
+ }catch{}
+})();
+</script></body>
+</html>

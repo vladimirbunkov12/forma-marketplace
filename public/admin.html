@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>FORMA — Панель владельца</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Закрытая зона управления · FORMA MARKETPLACE</div>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>/ ADMIN</span></span></a>
+    <button id="logoutBtn" class="button button-outline button-sm hidden">Выйти</button>
+  </div></header>
+  <main class="container wrap">
+    <section id="loginSection" class="card card-padded" style="max-width:470px;margin:40px auto" aria-labelledby="loginTitle">
+      <h2 id="loginTitle">Вход владельца</h2>
+      <p class="muted" style="font-size:12px">Управление маркетплейсом FORMA</p>
+      <form id="loginForm">
+        <div class="field-group">
+          <label class="field-label" for="email">Электронная почта</label>
+          <input class="field-control" id="email" type="email" autocomplete="username" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="password">Пароль</label>
+          <input class="field-control" id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button id="loginBtn" class="button button-primary" type="submit">Войти</button>
+      </form>
+      <p id="loginMessage" role="status" class="message"></p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <h2 style="font-size:24px;margin-bottom:8px">Панель управления</h2>
+      <p class="muted" style="font-size:12px">Продавцы, заказы и комиссия FORMA 5%</p>
+
+      <div class="stats" id="overviewStats">
+        <div class="stat-card"><div class="stat-label">Всего продавцов</div><div class="stat-value" id="totalCompanies">—</div></div>
+        <div class="stat-card"><div class="stat-label">Заблокировано</div><div class="stat-value" id="blockedCompanies">—</div></div>
+        <div class="stat-card"><div class="stat-label">Заказов всего</div><div class="stat-value" id="totalOrders">—</div></div>
+        <div class="stat-card"><div class="stat-label">Общий оборот</div><div class="stat-value" id="totalSales">—</div></div>
+        <div class="stat-card"><div class="stat-label">Подтверждённая комиссия FORMA</div><div class="stat-value" id="totalCommission">—</div></div>
+        <div class="stat-card"><div class="stat-label">Сумма продавцам</div><div class="stat-value" id="sellerAmountTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Подтверждённых заказов</div><div class="stat-value" id="confirmedOrders">—</div></div>
+        <div class="stat-card"><div class="stat-label">Требуют уточнения</div><div class="stat-value" id="clarificationOrders">—</div></div>
+      </div>
+
+      <section class="card card-padded" style="margin-bottom:24px">
+        <h2 style="font-size:20px;margin-bottom:8px">Управление комиссией</h2>
+        <p class="muted" style="font-size:12px">Предложение новой ставки требует явного решения продавца. До принятия комиссия не меняется.</p>
+        <form id="commissionProposalForm">
+          <div class="field-group">
+            <label class="field-label" for="commissionCompany">Компания</label>
+            <select class="field-control" id="commissionCompany" required>
+              <option value="">Выберите компанию</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="commissionRate">Новая комиссия (%)</label>
+            <input class="field-control" id="commissionRate" type="number" min="5" max="15" step="0.01" value="5" required>
+          </div>
+          <button id="commissionProposalButton" class="button button-primary button-sm" type="submit">Отправить предложение</button>
+        </form>
+        <p id="commissionProposalMessage" class="muted" role="status" style="font-size:12px;margin-top:10px"></p>
+        <h3 style="font-size:16px;margin-top:20px;margin-bottom:8px">История предложений</h3>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">
+          <table class="data-table" style="min-width:700px">
+            <thead>
+              <tr><th>Компания</th><th>Было</th><th>Предложено</th><th>Статус</th><th>Создано</th><th>Решение</th></tr>
+            </thead>
+            <tbody id="commissionProposalsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="muted" style="font-size:12px">Финансовые суммы основаны на сохранённых начислениях по заказам и не означают, что деньги получены или выплачены. Старые заказы без подтверждённой ставки требуют уточнения.</p>
+
+      <section class="card card-padded" style="margin-bottom:24px">
+        <h2 style="font-size:20px;margin-bottom:8px">Рейтинг компаний по сумме всех заказов (включая тестовые)</h2>
+        <p id="financeMessage" class="muted" role="status" style="font-size:12px"></p>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">
+          <table class="data-table" style="min-width:600px">
+            <thead>
+              <tr><th>Место</th><th>Компания</th><th>Город</th><th>Продажи</th></tr>
+            </thead>
+            <tbody id="financeCompaniesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-padded" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <h2 style="font-size:20px;margin:0">История начислений по заказам</h2>
+          <div>
+            <button id="financePrevBtn" class="button button-outline button-sm" type="button">Назад</button>
+            <span id="financePageLabel" class="muted" style="font-size:12px;margin:0 10px">Страница —</span>
+            <button id="financeNextBtn" class="button button-outline button-sm" type="button">Вперёд</button>
+          </div>
+        </div>
+        <p class="muted" style="font-size:12px">Комиссия и сумма продавцу указаны только для заказов с сохранённой ставкой выше 0. Это начисления по данным заказа, не подтверждение выплаты.</p>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">
+          <table class="data-table" style="min-width:760px">
+            <thead>
+              <tr><th>Заказ / дата</th><th>Компания</th><th>Покупатель</th><th style="text-align:right">Оборот</th><th style="text-align:right">Комиссия FORMA</th><th style="text-align:right">Продавцу</th><th>Статус</th></tr>
+            </thead>
+            <tbody id="financeHistoryBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-padded" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <h2 style="font-size:20px;margin:0">Продавцы</h2>
+          <button id="refreshBtn" class="button button-outline button-sm">Обновить</button>
+        </div>
+        <p id="companiesMessage" role="status" class="message" style="font-size:12px"></p>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">
+          <table class="data-table" style="min-width:700px">
+            <thead>
+              <tr><th>ID</th><th>Компания</th><th>Город</th><th>Email</th><th>Статус</th><th>Действие</th></tr>
+            </thead>
+            <tbody id="companiesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-padded" style="margin-bottom:24px">
+        <h2 style="font-size:20px;margin-bottom:8px">Последние заказы</h2>
+        <p id="ordersMessage" role="status" class="message" style="font-size:12px"></p>
+        <div style="overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">
+          <table class="data-table" style="min-width:700px">
+            <thead>
+              <tr><th>№</th><th>Компания</th><th>Покупатель</th><th style="text-align:right">Сумма</th><th style="text-align:right">Начисление FORMA</th><th>Статус</th></tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card card-padded" style="margin-bottom:24px">
+        <h2 style="font-size:20px;margin-bottom:8px">Настройки аккаунта</h2>
+        <form id="passwordChangeForm">
+          <div class="field-group">
+            <label class="field-label" for="currentPassword">Текущий пароль</label>
+            <input class="field-control" id="currentPassword" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="newPassword">Новый пароль</label>
+            <input class="field-control" id="newPassword" type="password" autocomplete="new-password" required>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="confirmPassword">Подтверждение нового пароля</label>
+            <input class="field-control" id="confirmPassword" type="password" autocomplete="new-password" required>
+          </div>
+          <button id="changePasswordBtn" class="button button-primary button-sm" type="submit">Изменить пароль</button>
+        </form>
+        <p id="passwordChangeMessage" role="status" class="message" style="font-size:12px;margin-top:10px"></p>
+      </section>
+
+      <section class="card card-padded">
+        <h2 style="font-size:20px;margin-bottom:8px">Реквизиты компании FORMA</h2>
+        <p class="muted" style="font-size:12px">Доступны только в панели владельца. Не показываются публично.</p>
+        <form id="platformDetailsForm">
+          <div class="field-group">
+            <label class="field-label" for="platformCompanyName">Название компании</label>
+            <input class="field-control" id="platformCompanyName" type="text">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformBinIin">БИН/ИИН</label>
+            <input class="field-control" id="platformBinIin" type="text">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformLegalAddress">Юридический адрес</label>
+            <input class="field-control" id="platformLegalAddress" type="text">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformPhone">Телефон</label>
+            <input class="field-control" id="platformPhone" type="tel">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformEmail">Email</label>
+            <input class="field-control" id="platformEmail" type="email">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformBankName">Название банка</label>
+            <input class="field-control" id="platformBankName" type="text">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformBik">БИК</label>
+            <input class="field-control" id="platformBik" type="text">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="platformIban">IBAN</label>
+            <input class="field-control" id="platformIban" type="text">
+          </div>
+          <button id="platformDetailsSaveBtn" class="button button-primary button-sm" type="submit">Сохранить реквизиты</button>
+        </form>
+        <p id="platformDetailsMessage" role="status" class="message" style="font-size:12px;margin-top:10px"></p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+  const $ = id => document.getElementById(id);
+  const money = value =>
+    new Intl.NumberFormat("ru-KZ").format(Number(value) || 0) + " ₸";
+  let financeHistoryPage = 1;
+  let financeHistoryTotalPages = 1;
+
+  async function request(url, options = {}) {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      ...options
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = new Error(data.message || "Ошибка запроса");
+      error.status = response.status;
+      throw error;
+    }
+
+    return data;
+  }
+
+  function showLogin() {
+    $("dashboard").classList.add("hidden");
+    $("logoutBtn").classList.add("hidden");
+    $("loginSection").classList.remove("hidden");
+  }
+
+  function showDashboard() {
+    $("loginSection").classList.add("hidden");
+    $("dashboard").classList.remove("hidden");
+    $("logoutBtn").classList.remove("hidden");
+  }
+
+  function cell(row, value) {
+    const td = document.createElement("td");
+    td.textContent = value == null ? "—" : String(value);
+    row.appendChild(td);
+    return td;
+  }
+
+  async function loadCompanies() {
+    $("companiesMessage").textContent = "Загрузка...";
+    const data = await request("/api/admin/companies");
+    const companies = data.companies || [];
+
+    const companySelect = $("commissionCompany");
+    const selectedCompanyId = companySelect.value;
+    companySelect.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Выберите компанию";
+    companySelect.appendChild(placeholder);
+    for (const company of companies) {
+      const option = document.createElement("option");
+      option.value = company.id;
+      option.textContent = company.company_name + " — " + company.city +
+        " (сейчас " + (Number(company.commission_rate_bps) / 100) + "%)";
+      companySelect.appendChild(option);
+    }
+    if (selectedCompanyId) companySelect.value = selectedCompanyId;
+
+    $("totalCompanies").textContent = companies.length;
+    $("blockedCompanies").textContent =
+      companies.filter(c => c.is_blocked === 1).length;
+
+    $("companiesBody").replaceChildren();
+
+    for (const company of companies) {
+      const row = document.createElement("tr");
+      cell(row, company.id);
+      cell(row, company.company_name);
+      cell(row, company.city);
+      cell(row, company.email);
+
+      const blocked = company.is_blocked === 1;
+      cell(row, blocked ? "Заблокирован" : "Активен");
+
+      const actionCell = document.createElement("td");
+      const button = document.createElement("button");
+      button.className = blocked ? "success" : "danger";
+      button.textContent = blocked ? "Разблокировать" : "Заблокировать";
+      button.style.cssText = "padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:600;font-size:12px";
+
+      button.addEventListener("click", async () => {
+        const nextBlocked = !blocked;
+
+        if (!confirm(
+          (nextBlocked ? "Заблокировать " : "Разблокировать ") +
+          company.company_name + "?"
+        )) return;
+
+        button.disabled = true;
+
+        try {
+          await request(
+            "/api/admin/companies/" + company.id + "/block",
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ blocked: nextBlocked })
+            }
+          );
+          await loadCompanies();
+        } catch (error) {
+          alert(error.message);
+          button.disabled = false;
+          if (error.status === 401) showLogin();
+        }
+      });
+
+      actionCell.appendChild(button);
+      row.appendChild(actionCell);
+      $("companiesBody").appendChild(row);
+    }
+
+    $("companiesMessage").textContent =
+      companies.length ? "" : "Продавцов пока нет.";
+  }
+
+  async function loadCommissionProposals() {
+    const data = await request("/api/admin/commission-proposals");
+    const body = $("commissionProposalsBody");
+    body.replaceChildren();
+
+    const statusNames = {
+      pending: "Ожидает решения",
+      accepted: "Принято",
+      rejected: "Отклонено",
+      cancelled: "Отменено новым предложением",
+      stale: "Устарело"
+    };
+
+    for (const proposal of data.proposals || []) {
+      const row = document.createElement("tr");
+      cell(row, proposal.company_name || "Компания удалена");
+      cell(row, (Number(proposal.old_rate_bps) / 100) + "%");
+      cell(row, (Number(proposal.new_rate_bps) / 100) + "%");
+      cell(row, statusNames[proposal.status] || proposal.status);
+      cell(row, proposal.created_at);
+      cell(row, proposal.decided_at || "—");
+      body.appendChild(row);
+    }
+
+    if (!data.proposals?.length) {
+      const row = document.createElement("tr");
+      cell(row, "Предложений пока нет.").colSpan = 6;
+      body.appendChild(row);
+    }
+  }
+
+  async function loadOrders() {
+    $("ordersMessage").textContent = "Загрузка...";
+    const data = await request("/api/admin/orders");
+    const orders = data.orders || [];
+
+    $("ordersBody").replaceChildren();
+
+    for (const order of orders) {
+      const row = document.createElement("tr");
+      cell(row, order.id);
+      cell(row, order.company_name);
+      cell(row, order.buyer_name);
+      cell(row, money(order.total_amount));
+      cell(
+        row,
+        Number(order.commission_rate_bps) > 0
+          ? money(order.commission_amount)
+          : "Требует уточнения"
+      );
+      cell(row, order.status);
+      $("ordersBody").appendChild(row);
+    }
+
+    $("ordersMessage").textContent =
+      orders.length ? "" : "Заказов пока нет.";
+  }
+
+  async function loadFinance() {
+    $("financeMessage").textContent = "Загрузка финансовых данных...";
+    const data = await request(
+      "/api/admin/finance?page=" + encodeURIComponent(financeHistoryPage)
+    );
+    const summary = data.summary;
+    const companies = data.companies || [];
+    const history = data.history;
+
+    $("totalCompanies").textContent = summary.companyCount;
+    $("totalOrders").textContent = summary.orderCount;
+    $("totalSales").textContent = money(summary.salesTotal);
+    $("totalCommission").textContent =
+      money(summary.confirmedCommissionTotal);
+    $("sellerAmountTotal").textContent = money(summary.sellerAmountTotal);
+    $("confirmedOrders").textContent = summary.confirmedOrderCount;
+    $("clarificationOrders").textContent =
+      summary.clarificationOrderCount;
+
+    $("financeCompaniesBody").replaceChildren();
+    companies.forEach((company, index) => {
+      const row = document.createElement("tr");
+      cell(row, index + 1);
+      cell(row, company.company_name);
+      cell(row, company.city);
+      cell(row, money(company.sales_total));
+      $("financeCompaniesBody").appendChild(row);
+    });
+
+    $("financeHistoryBody").replaceChildren();
+    history.orders.forEach(order => {
+      const row = document.createElement("tr");
+      const createdAt = order.created_at
+        ? new Date(order.created_at)
+        : null;
+      const dateText = createdAt && !Number.isNaN(createdAt.getTime())
+        ? createdAt.toLocaleString("ru-RU")
+        : (order.created_at || "—");
+
+      cell(row, "№" + order.id + " · " + dateText);
+      cell(row, order.company_name);
+      cell(row, order.buyer_name);
+      cell(row, money(order.total_amount));
+      cell(
+        row,
+        order.commission_amount == null
+          ? "—"
+          : money(order.commission_amount)
+      );
+      cell(
+        row,
+        order.seller_amount == null
+          ? "—"
+          : money(order.seller_amount)
+      );
+      cell(row, order.financial_status);
+      $("financeHistoryBody").appendChild(row);
+    });
+
+    if (history.orders.length === 0) {
+      const row = document.createElement("tr");
+      cell(row, "История заказов пока пуста.").colSpan = 7;
+      $("financeHistoryBody").appendChild(row);
+    }
+
+    financeHistoryPage = history.page;
+    financeHistoryTotalPages = history.totalPages;
+    $("financePageLabel").textContent =
+      "Страница " + history.page + " из " + history.totalPages;
+    $("financePrevBtn").disabled = history.page <= 1;
+    $("financeNextBtn").disabled = history.page >= history.totalPages;
+    $("financeMessage").textContent = "";
+  }
+
+  async function changeFinancePage(offset) {
+    const nextPage = financeHistoryPage + offset;
+    if (nextPage < 1 || nextPage > financeHistoryTotalPages) return;
+
+    financeHistoryPage = nextPage;
+    try {
+      await loadFinance();
+    } catch (error) {
+      $("financeMessage").textContent = error.message;
+      if (error.status === 401) showLogin();
+    }
+  }
+
+  async function refresh() {
+    try {
+      await Promise.all([
+        loadCompanies(),
+        loadOrders(),
+        loadFinance(),
+        loadCommissionProposals(),
+        loadPlatformDetails()
+      ]);
+    } catch (error) {
+      $("financeMessage").textContent = error.message;
+      alert(error.message);
+      if (error.status === 401) showLogin();
+    }
+  }
+
+  $("financePrevBtn").addEventListener("click", () => {
+    changeFinancePage(-1);
+  });
+  $("financeNextBtn").addEventListener("click", () => {
+    changeFinancePage(1);
+  });
+
+  $("commissionProposalForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = $("commissionProposalButton");
+    const newRateBps = Math.round(Number($("commissionRate").value) * 100);
+    const companyId = Number($("commissionCompany").value);
+
+    if (!companyId || !Number.isSafeInteger(newRateBps) ||
+        newRateBps < 500 || newRateBps > 1500) {
+      $("commissionProposalMessage").textContent =
+        "Выберите компанию и ставку от 5% до 15%.";
+      return;
+    }
+
+    button.disabled = true;
+    $("commissionProposalMessage").textContent = "Отправляем предложение...";
+
+    try {
+      await request("/api/admin/commission-proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId, newRateBps })
+      });
+      $("commissionProposalMessage").textContent =
+        "Предложение отправлено продавцу. Текущая комиссия не изменится до его согласия.";
+      await Promise.all([loadCompanies(), loadCommissionProposals()]);
+    } catch (error) {
+      $("commissionProposalMessage").textContent = error.message;
+      if (error.status === 401) showLogin();
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("loginForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    $("loginBtn").disabled = true;
+    $("loginMessage").textContent = "";
+
+    try {
+      await request("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: $("email").value.trim(),
+          password: $("password").value
+        })
+      });
+
+      $("password").value = "";
+      showDashboard();
+      await refresh();
+    } catch (error) {
+      $("loginMessage").textContent = error.message;
+      $("loginMessage").className = "message error";
+    } finally {
+      $("loginBtn").disabled = false;
+    }
+  });
+
+  $("logoutBtn").addEventListener("click", async () => {
+    try {
+      await request("/api/admin/logout", { method: "POST" });
+      showLogin();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  $("passwordChangeForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = $("changePasswordBtn");
+    const message = $("passwordChangeMessage");
+    message.textContent = "";
+    message.className = "message";
+
+    const currentPassword = $("currentPassword").value;
+    const newPassword = $("newPassword").value;
+    const confirmPassword = $("confirmPassword").value;
+
+    if (newPassword !== confirmPassword) {
+      message.textContent = "Новый пароль и подтверждение не совпадают.";
+      message.className = "message error";
+      return;
+    }
+
+    if (newPassword.length < 12 || newPassword.length > 128) {
+      message.textContent = "Новый пароль должен содержать от 12 до 128 символов.";
+      message.className = "message error";
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = "Меняем пароль...";
+
+    try {
+      await request("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      message.textContent = "Пароль успешно изменён.";
+      message.className = "message success";
+      $("currentPassword").value = "";
+      $("newPassword").value = "";
+      $("confirmPassword").value = "";
+    } catch (error) {
+      message.textContent = error.message;
+      message.className = "message error";
+      if (error.status === 401) showLogin();
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  async function loadPlatformDetails() {
+    const message = $("platformDetailsMessage");
+    message.textContent = "";
+    message.className = "message";
+
+    try {
+      const data = await request("/api/admin/platform-details");
+      const d = data.details || {};
+
+      $("platformCompanyName").value = d.company_name || "";
+      $("platformBinIin").value = d.bin_iin || "";
+      $("platformLegalAddress").value = d.legal_address || "";
+      $("platformPhone").value = d.phone || "";
+      $("platformEmail").value = d.email || "";
+      $("platformBankName").value = d.bank_name || "";
+      $("platformBik").value = d.bik || "";
+      $("platformIban").value = d.iban || "";
+
+      if (d.updated_at) {
+        message.textContent = "Загружено " + new Date(d.updated_at).toLocaleString("ru-RU");
+        message.className = "message muted";
+      }
+    } catch (error) {
+      message.textContent = error.message;
+      message.className = "message error";
+      if (error.status === 401) showLogin();
+    }
+  }
+
+  $("platformDetailsForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = $("platformDetailsSaveBtn");
+    const message = $("platformDetailsMessage");
+    message.textContent = "";
+    message.className = "message";
+
+    const payload = {
+      companyName: $("platformCompanyName").value,
+      binIin: $("platformBinIin").value,
+      legalAddress: $("platformLegalAddress").value,
+      phone: $("platformPhone").value,
+      email: $("platformEmail").value,
+      bankName: $("platformBankName").value,
+      bik: $("platformBik").value,
+      iban: $("platformIban").value
+    };
+
+    button.disabled = true;
+    message.textContent = "Сохраняем реквизиты...";
+
+    try {
+      await request("/api/admin/platform-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      message.textContent = "Реквизиты FORMA сохранены.";
+      message.className = "message success";
+    } catch (error) {
+      message.textContent = error.message;
+      message.className = "message error";
+      if (error.status === 401) showLogin();
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $("refreshBtn").addEventListener("click", refresh);
+
+  (async () => {
+    try {
+      await request("/api/admin/me");
+      showDashboard();
+      await refresh();
+    } catch {
+      showLogin();
+    }
+  })();
+  </script>
+</body>
+</html>

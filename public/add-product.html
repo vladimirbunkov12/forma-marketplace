@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Добавить мебель — FORMA</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.dim-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.dim-field{display:flex;flex-direction:column;gap:5px}
+.dim-field label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.file-box{position:relative;overflow:hidden;border:2px dashed var(--line);border-radius:var(--radius-sm);padding:24px;text-align:center;background:var(--surface-soft);cursor:pointer;transition:border-color 0.2s ease}
+.file-box:hover{border-color:var(--gold)}
+.file-box.drag-over{border-color:var(--gold);background:#f2ebe1}
+.file-hint{font-size:11px;color:var(--muted-soft);margin-top:8px}
+.preview-wrap{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--white)}
+.preview-wrap img{max-width:100%;max-height:300px;display:block;margin:0 auto}
+@media(max-width:640px){.dim-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<div class="topline">Добавление товара · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <a class="button-ghost" href="/dashboard.html">Мой кабинет</a>
+  <div class="header-actions"></div>
+</div></header>
+
+<main class="container wrap">
+  <h1 style="font-size:24px;margin-bottom:8px">Добавить мебель</h1>
+  <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:20px">Заполните информацию о товаре, который хотите разместить на FORMA.</p>
+
+  <form id="productForm" class="card card-padded">
+    <div class="field-group">
+      <label class="field-label" for="name">Название мебели</label>
+      <input class="field-control" id="name" type="text" placeholder="Например, Кухня Modern" maxlength="150" required>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="category">Категория</label>
+      <select class="field-control" id="category" required>
+        <option value="">Выберите категорию</option>
+        <option value="Кухни">Кухни</option>
+        <option value="Шкафы">Шкафы</option>
+        <option value="Диваны">Диваны</option>
+        <option value="Кровати">Кровати</option>
+        <option value="Столы">Столы</option>
+        <option value="Другая мебель">Другая мебель</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="price">Цена в тенге</label>
+      <input class="field-control" id="price" type="number" min="1" step="1" placeholder="Например, 250000" required>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="description">Описание</label>
+      <textarea class="field-control" id="description" placeholder="Материал, размеры, цвет и особенности мебели" maxlength="3000" required></textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" style="display:block;margin-bottom:6px">Размеры упаковки</label>
+      <div class="dim-row">
+        <div class="dim-field"><label>Вес (кг)</label><input class="field-control" id="weight_kg" type="number" min="0.1" step="0.1" placeholder="45"></div>
+        <div class="dim-field"><label>Длина (см)</label><input class="field-control" id="length_cm" type="number" min="1" step="0.1" placeholder="180"></div>
+        <div class="dim-field"><label>Ширина (см)</label><input class="field-control" id="width_cm" type="number" min="1" step="0.1" placeholder="80"></div>
+        <div class="dim-field"><label>Высота (см)</label><input class="field-control" id="height_cm" type="number" min="1" step="0.1" placeholder="60"></div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="photo">Фотография мебели</label>
+      <div class="file-box" id="photoDrop">
+        <input id="photo" type="file" accept="image/jpeg,image/png,image/webp" required style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+        <div style="font-weight:600">Выберите фотографию</div>
+        <p class="file-hint">JPG, PNG или WEBP. Максимум 5 МБ.</p>
+      </div>
+      <div id="preview" class="preview-wrap" hidden><img id="previewImg" alt="Предпросмотр мебели"></div>
+    </div>
+
+    <button type="submit" id="submitButton" class="button button-primary" style="margin-top:24px">Опубликовать товар</button>
+  </form>
+
+  <p class="message" id="message" role="status"></p>
+</main>
+
+<script>
+const form = document.getElementById("productForm");
+const photo = document.getElementById("photo");
+const preview = document.getElementById("preview");
+const previewImg = document.getElementById("previewImg");
+const message = document.getElementById("message");
+const button = document.getElementById("submitButton");
+const drop = document.getElementById("photoDrop");
+
+let previewUrl = null;
+
+photo.addEventListener("change", () => {
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+  }
+
+  const file = photo.files[0];
+
+  if (!file) {
+    preview.hidden = true;
+    previewImg.removeAttribute("src");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    message.textContent = "Размер фотографии не должен превышать 5 МБ.";
+    message.className = "message error";
+    photo.value = "";
+    preview.hidden = true;
+    return;
+  }
+
+  previewUrl = URL.createObjectURL(file);
+  previewImg.src = previewUrl;
+  preview.hidden = false;
+});
+
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag-over"); });
+drop.addEventListener("dragleave", () => { drop.classList.remove("drag-over"); });
+drop.addEventListener("drop", e => {
+  e.preventDefault();
+  drop.classList.remove("drag-over");
+  const files = e.dataTransfer.files;
+  if (files.length) photo.files = files;
+  photo.dispatchEvent(new Event("change"));
+});
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const file = photo.files[0];
+
+  if (!file) {
+    message.textContent = "Выберите фотографию.";
+    message.className = "message error";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    message.textContent = "Фотография больше 5 МБ.";
+    message.className = "message error";
+    return;
+  }
+
+  const data = new FormData();
+  data.append("name", document.getElementById("name").value.trim());
+  data.append("category", document.getElementById("category").value);
+  data.append("price", document.getElementById("price").value);
+  data.append("description", document.getElementById("description").value.trim());
+  data.append("photo", file);
+  data.append("weight_kg", document.getElementById("weight_kg").value);
+  data.append("length_cm", document.getElementById("length_cm").value);
+  data.append("width_cm", document.getElementById("width_cm").value);
+  data.append("height_cm", document.getElementById("height_cm").value);
+
+  button.disabled = true;
+  button.textContent = "Публикуем...";
+  message.textContent = "";
+
+  try {
+    const response = await fetch("/api/products", {
+      method: "POST",
+      body: data
+    });
+
+    if (response.status === 401) {
+      window.location.href = "/login.html";
+      return;
+    }
+
+    const result = await response.json();
+
+    message.textContent = result.message ||
+      "Неизвестный ответ сервера.";
+
+    if (response.ok && result.success) {
+      message.className = "message success";
+      form.reset();
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+      }
+
+      preview.hidden = true;
+      previewImg.removeAttribute("src");
+    } else {
+      message.className = "message error";
+    }
+
+  } catch (error) {
+    message.textContent =
+      "Не удалось опубликовать товар. Проверьте сервер.";
+    message.className = "message error";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Опубликовать товар";
+  }
+});
+</script>
+
+</body>
+</html>

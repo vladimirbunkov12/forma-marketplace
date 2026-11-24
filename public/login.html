@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>Вход продавца — FORMA</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Вход в кабинет продавца · FORMA MARKETPLACE</div>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+    <a class="button-ghost" href="/">← На главную</a>
+    <div class="header-actions"></div>
+  </div></header>
+  <main class="container wrap">
+    <section class="card card-padded" style="max-width:470px;margin:0 auto" aria-labelledby="loginTitle">
+      <div class="eyebrow">Вход продавца</div>
+      <h1 id="loginTitle">Вход в аккаунт</h1>
+      <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:20px">Войдите в аккаунт своей мебельной компании.</p>
+
+      <form id="loginForm">
+        <div class="field-group">
+          <label class="field-label" for="email">Электронная почта</label>
+          <input class="field-control" id="email" type="email" placeholder="company@example.kz" autocomplete="email" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="password">Пароль</label>
+          <input class="field-control" id="password" type="password" placeholder="Введите пароль" autocomplete="current-password" required>
+        </div>
+        <button id="loginButton" class="button button-primary" type="submit">Войти в аккаунт</button>
+      </form>
+
+      <p class="message" id="message" role="status"></p>
+
+      <div style="margin-top:20px;text-align:center">
+        Нет аккаунта? <a href="/register" style="color:var(--gold-dark);font-weight:600">Зарегистрироваться</a>
+      </div>
+    </section>
+  </main>
+  <script>
+  const form = document.getElementById("loginForm");
+  const message = document.getElementById("message");
+  const button = document.getElementById("loginButton");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    button.disabled = true;
+    button.textContent = "Входим...";
+    message.textContent = "";
+    message.className = "message";
+
+    try {
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        message.textContent = "Вход выполнен успешно!";
+        message.className = "message success";
+
+        window.location.replace("/dashboard.html");
+      } else {
+        message.textContent =
+          result.message || "Не удалось войти.";
+        message.className = "message error";
+      }
+
+    } catch (error) {
+      message.textContent =
+        "Ошибка соединения с сервером.";
+      message.className = "message error";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Войти в аккаунт";
+    }
+  });
+  </script>
+</body>
+</html>

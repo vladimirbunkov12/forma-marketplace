@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Корзина — FORMA MARKETPLACE</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+.cart-page { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+.cart-empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.cart-empty .empty-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+.cart-items { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
+.cart-item {
+  display: grid;
+  grid-template-columns: 120px 1fr 160px 120px 100px;
+  gap: 16px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+.cart-item-image {
+  width: 100px; height: 100px; object-fit: contain; border-radius: var(--radius-sm);
+  background: var(--line-soft); display: block;
+}
+.cart-item-info h4 { margin: 0 0 4px; font-size: 15px; color: var(--graphite); }
+.cart-item-category { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.cart-item-dims { font-size: 12px; color: var(--graphite-soft); margin-bottom: 4px; }
+.cart-item-price { font-size: 16px; font-weight: 700; color: var(--graphite); font-variant-numeric: tabular-nums; }
+.cart-item-company { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.cart-item-whatsapp { font-size: 11px; color: var(--gold-dark); }
+.qty-controls {
+  display: flex; align-items: center; gap: 8px;
+}
+.qty-btn {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white);
+  color: var(--graphite); font-size: 16px; cursor: pointer; transition: all 0.2s ease;
+}
+.qty-btn:hover { border-color: var(--gold); color: var(--gold-dark); background: var(--surface-soft); }
+.qty-value { min-width: 32px; text-align: center; font-size: 14px; font-weight: 600; color: var(--graphite); }
+.remove-btn {
+  color: var(--muted-soft); font-size: 11px; background: none; border: none; cursor: pointer;
+  transition: color 0.2s ease;
+}
+.remove-btn:hover { color: #a6483d; text-decoration: underline; }
+.cart-summary {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 24px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--white);
+}
+.cart-summary-row {
+  display: flex; justify-content: space-between; font-size: 14px; color: var(--graphite-soft);
+}
+.cart-summary-total {
+  display: flex; justify-content: space-between; font-size: 20px; font-weight: 700;
+  color: var(--graphite); padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.checkout-btn {
+  width: 100%; min-height: 52px; font-size: 15px; font-weight: 600;
+}
+.cart-note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+@media (max-width: 768px) {
+  .cart-item { grid-template-columns: 80px 1fr 120px 90px 80px; gap: 10px; padding: 14px; }
+  .cart-item-image { width: 70px; height: 70px; }
+  .cart-summary { padding: 18px; }
+}
+@media (max-width: 480px) {
+  .cart-item { grid-template-columns: 60px 1fr 90px 70px 60px; gap: 8px; padding: 10px; font-size: 12px; }
+  .cart-item h4 { font-size: 13px; }
+  .qty-controls { gap: 6px; }
+  .qty-btn { width: 28px; height: 28px; font-size: 14px; }
+}
+
+.cart-item {grid-template-columns: 100px minmax(0,1fr) auto; gap:14px;}
+.cart-photo {width:100px;height:100px;}
+.cart-photo img {width:100%;height:100%;}
+.cart-item-info {min-width:0;overflow-wrap:anywhere;}
+.cart-item-price,.cart-item-line-total {white-space:nowrap;}
+@media(max-width:600px){.cart-item{grid-template-columns:70px minmax(0,1fr);}.cart-photo{width:70px;height:70px;}.cart-item-price,.cart-item-line-total{white-space:normal;}}
+</style>
+</head>
+<body>
+
+<div class="topline">Корзина покупок · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <a class="button-ghost" href="/catalog.html">В каталог</a>
+  <a class="button-ghost" href="/buyer-account.html">Кабинет покупателя</a>
+  <div class="header-actions">
+    <a class="button button-outline" href="/auth-choice.html">Войти</a>
+    <a class="button button-primary" href="/buyer-cart.html" id="headerCartLink">Корзина <span id="headerCartCount" class="cart-badge">0</span></a>
+  </div>
+</div></header>
+
+<main class="cart-page">
+  <h1 style="font-size:28px;margin-bottom:8px">Корзина</h1>
+  <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:24px">Выберите товары для оформления заказа. Цены и комиссия рассчитываются на стороне продавца.</p>
+
+  <div id="cartEmpty" class="cart-empty" hidden>
+    <span class="empty-icon" aria-hidden="true">🛒</span>
+    <h3 style="font-size:20px;margin-bottom:8px">Корзина пуста</h3>
+    <p>Добавьте товары из каталога, чтобы оформить заказ.</p>
+    <a href="/catalog.html" class="button button-primary">Перейти в каталог</a>
+  </div>
+
+  <div id="cartItems" class="cart-items" hidden></div>
+
+  <div id="cartSummary" class="cart-summary" hidden>
+    <div class="cart-summary-row"><span>Товаров в корзине:</span><span id="cartItemCount">0</span></div>
+    <div class="cart-summary-row"><span>Итого к оплате:</span><span id="cartTotal">0 ₸</span></div>
+    <div class="field"><label for="deliveryCity">Город доставки</label><input class="field-control" id="deliveryCity" maxlength="100" required></div><div class="field"><label for="deliveryAddress">Адрес доставки</label><input class="field-control" id="deliveryAddress" maxlength="300" required></div><button id="checkoutBtn" class="button button-primary checkout-btn">Оформить заказ</button>
+    <p class="cart-note">При оформлении заказа вы будете перенаправлены на страницу оплаты. Платёжная система подключается отдельно.</p>
+  </div>
+
+  <div id="cartError" class="message error" style="margin-top:16px" hidden></div>
+</main>
+
+<script>
+const cartItemsEl = document.getElementById("cartItems");
+const cartEmptyEl = document.getElementById("cartEmpty");
+const cartSummaryEl = document.getElementById("cartSummary");
+const cartErrorEl = document.getElementById("cartError");
+const cartItemCountEl = document.getElementById("cartItemCount");
+const cartTotalEl = document.getElementById("cartTotal");
+const checkoutBtn = document.getElementById("checkoutBtn");
+const headerCartCountEl = document.getElementById("headerCartCount");
+
+let cartItems = [];
+
+async function loadCart() {
+  try {
+    const response = await fetch("/api/buyer/cart", { credentials: "same-origin" });
+    if (response.status === 401) {
+      location.href = "/buyer-account.html";
+      return;
+    }
+    if (!response.ok) throw new Error("Не удалось загрузить корзину");
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message || "Ошибка загрузки корзины");
+    cartItems = data.items || [];
+    renderCart();
+    updateHeaderCart();
+  } catch (error) {
+    cartErrorEl.textContent = error.message;
+    cartErrorEl.hidden = false;
+  }
+}
+
+async function updateHeaderCart() {
+  try {
+    const response = await fetch("/api/buyer/cart/count", { credentials: "same-origin" });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && headerCartCountEl) {
+        headerCartCountEl.textContent = data.count;
+      }
+    }
+  } catch {}
+}
+
+function formatPrice(value) {
+  const price = Number(value);
+  if (!Number.isFinite(price) || price <= 0) return "Цена по запросу";
+  return new Intl.NumberFormat("ru-KZ").format(price) + " ₸";
+}
+
+function renderCart() {
+  if (cartItems.length === 0) {
+    cartEmptyEl.hidden = false;
+    cartItemsEl.hidden = true;
+    cartSummaryEl.hidden = true;
+    cartItemCountEl.textContent = "0";
+    cartTotalEl.textContent = "0 ₸";
+    return;
+  }
+
+  cartEmptyEl.hidden = true;
+  cartItemsEl.hidden = false;
+  cartSummaryEl.hidden = false;
+
+  let total = 0;
+  let itemCount = 0;
+
+  cartItemsEl.replaceChildren();
+
+  cartItems.forEach(item => {
+    let unitPrice = Number(item.price);
+    let dims = {}; try { dims = JSON.parse(item.dimensions || "{}"); } catch {}
+    if (String(item.category).toLowerCase().includes("кух") && Number(item.kitchen_per_meter)>0) unitPrice=Math.round((dims.length ?? 3)*Number(item.kitchen_per_meter));
+    if (String(item.category).toLowerCase().includes("шкаф") && Number(item.wardrobe_per_sqm)>0) unitPrice=Math.round((dims.width ?? 2)*(dims.height ?? 2.4)*Number(item.wardrobe_per_sqm));
+    const itemTotal = unitPrice * Number(item.quantity);
+    total += itemTotal;
+    itemCount += Number(item.quantity);
+
+    const el = document.createElement("article");
+    el.className = "cart-item";
+
+    const dimensionsText = [dims.length > 0 ? `Длина: ${dims.length} м` : '', dims.width > 0 ? `Ширина: ${dims.width} м` : '', dims.height > 0 ? `Высота: ${dims.height} м` : '', dims.area > 0 ? `Площадь: ${dims.area} м²` : ''].filter(Boolean).join(' · ');
+
+    el.innerHTML = `
+      <div class="cart-photo"><img ${item.photoUrl ? '' : 'hidden'} class="cart-item-image" src="${escapeHtml(item.photoUrl || '')}" alt="${escapeHtml(item.name)}" onerror="this.style.display='none';this.nextElementSibling.hidden=false">
+      <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--muted);font-family:Georgia,serif;font-size:14px"${item.photoUrl ? ' hidden' : ''}>Фото недоступно</div></div>
+      <div class="cart-item-info">
+        <h4>${escapeHtml(item.name)}</h4>
+        <span class="cart-item-category">${escapeHtml(item.category)}</span>
+        <div class="cart-item-dims">${escapeHtml(dimensionsText)}</div>
+        <div class="cart-item-company">${escapeHtml(item.company_name)} · ${escapeHtml(item.city)}</div>
+        <a href="https://wa.me/${String(item.company_phone || '').replace(/\D/g,'')}?text=Здравствуйте! Меня заинтересовал товар «${encodeURIComponent(item.name)}» на FORMA MARKETPLACE." class="cart-item-whatsapp" target="_blank" rel="noopener noreferrer">✉ Написать продавцу</a>
+      </div>
+      <div class="cart-item-price">${formatPrice(unitPrice)}</div>
+      <div class="qty-controls">
+        <button class="qty-btn" data-action="decrease" data-id="${item.cart_item_id}">−</button>
+        <span class="qty-value" id="qty-${item.cart_item_id}">${item.quantity}</span>
+        <button class="qty-btn" data-action="increase" data-id="${item.cart_item_id}">+</button>
+      </div>
+      <div class="cart-item-line-total">${formatPrice(itemTotal)}</div>
+      <button class="remove-btn" data-id="${item.cart_item_id}">Удалить</button>
+    `;
+    cartItemsEl.appendChild(el);
+  });
+
+  cartItemCountEl.textContent = itemCount;
+  cartTotalEl.textContent = formatPrice(total);
+}
+
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML.replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+cartItemsEl.addEventListener("click", async (event) => {
+  const btn = event.target.closest(".qty-btn, .remove-btn");
+  if (!btn) return;
+  const itemId = btn.dataset.id;
+
+  if (btn.classList.contains("remove-btn")) {
+    await removeItem(itemId);
+    return;
+  }
+
+  const action = btn.dataset.action;
+  const item = cartItems.find(i => String(i.cart_item_id) === itemId);
+  if (!item) return;
+
+  let newQty = item.quantity;
+  if (action === "increase") newQty = Math.min(100, newQty + 1);
+  if (action === "decrease") newQty = Math.max(1, newQty - 1);
+
+  try {
+    const response = await fetch("/api/buyer/cart/" + itemId, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ quantity: newQty })
+    });
+    if (!response.ok) throw new Error("Не удалось обновить количество");
+    await loadCart();
+  } catch (error) {
+    cartErrorEl.textContent = error.message;
+    cartErrorEl.hidden = false;
+  }
+});
+
+async function removeItem(itemId) {
+  try {
+    const response = await fetch("/api/buyer/cart/" + itemId, {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+    if (!response.ok) throw new Error("Не удалось удалить товар");
+    await loadCart();
+  } catch (error) {
+    cartErrorEl.textContent = error.message;
+    cartErrorEl.hidden = false;
+  }
+}
+
+checkoutBtn.addEventListener("click", async () => {
+  if (cartItems.length === 0) return;
+  checkoutBtn.disabled = true;
+  checkoutBtn.textContent = "Создаём заказы…";
+  try {
+    const response = await fetch("/api/buyer/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({deliveryCity:document.getElementById("deliveryCity").value,deliveryAddress:document.getElementById("deliveryAddress").value})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Не удалось оформить заказ");
+    }
+    // Перенаправляем на страницу оплаты
+    location.href = "/buyer-payment.html?orders=" + encodeURIComponent(data.orders.map(o=>o.orderId).join(","));
+  } catch (error) {
+    cartErrorEl.textContent = error.message;
+    cartErrorEl.hidden = false;
+    checkoutBtn.disabled = false;
+    checkoutBtn.textContent = "Оформить заказ";
+  }
+});
+
+fetch("/api/buyer/me").then(r=>r.json()).then(d=>{if(d.success)document.getElementById("deliveryAddress").value=d.buyer.delivery_address||""}).catch(()=>{});
+loadCart();
+</script>
+
+</body>
+</html>

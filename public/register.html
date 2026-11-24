@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>Регистрация продавца — FORMA</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Регистрация компании · FORMA MARKETPLACE</div>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+    <a class="button-ghost" href="/">← На главную</a>
+    <div class="header-actions"></div>
+  </div></header>
+  <main class="container wrap">
+    <section class="card card-padded" style="max-width:470px;margin:0 auto">
+      <div class="eyebrow">Стать продавцом</div>
+      <h1>Регистрация компании</h1>
+      <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:20px">Зарегистрируйте мебельную компанию и начните продавать через FORMA.</p>
+
+      <form id="registerForm">
+        <div class="field-group">
+          <label class="field-label" for="company">Название компании</label>
+          <input class="field-control" id="company" type="text" placeholder="Например, Алматы Мебель" maxlength="150" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="city">Город</label>
+          <select class="field-control" id="city" required>
+            <option value="">Выберите город</option>
+            <option value="Алматы">Алматы</option>
+            <option value="Астана">Астана</option>
+            <option value="Шымкент">Шымкент</option>
+            <option value="Караганда">Караганда</option>
+            <option value="Актобе">Актобе</option>
+            <option value="Другой город">Другой город</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="phone">Телефон</label>
+          <input class="field-control" id="phone" type="tel" placeholder="+7 777 123 45 67" maxlength="30" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="email">Электронная почта</label>
+          <input class="field-control" id="email" type="email" placeholder="company@example.kz" maxlength="254" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="password">Пароль</label>
+          <input class="field-control" id="password" type="password" minlength="8" autocomplete="new-password" required>
+        </div>
+        <label class="field-group" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px"><input type="checkbox" id="agreement" required><span>Принимаю условия комиссии FORMA (версия 1.0): начальная ставка 5%, изменение ставки по согласованию, до 15% для новых заказов.</span></label>
+        <button type="submit" id="submitButton" class="button button-primary">Зарегистрировать компанию</button>
+      </form>
+
+      <p class="message" id="message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script>
+  const form = document.getElementById("registerForm");
+  const message = document.getElementById("message");
+  const button = document.getElementById("submitButton");
+
+  form.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const data = {
+      company_name: document.getElementById("company").value.trim(),
+      city: document.getElementById("city").value,
+      phone: document.getElementById("phone").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      password: document.getElementById("password").value,
+      agreement_accepted: document.getElementById("agreement").checked,
+      agreement_version: "1.0"
+    };
+
+    button.disabled = true;
+    button.textContent = "Регистрируем...";
+    message.textContent = "";
+    message.className = "message";
+
+    try {
+      const response = await fetch("/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      message.textContent = result.message ||
+        "Неизвестный ответ сервера.";
+
+      if (response.ok && result.success) {
+        message.className = "message success";
+        form.reset();
+      } else {
+        message.className = "message error";
+      }
+
+    } catch (error) {
+      console.error("Ошибка:", error);
+      message.textContent =
+        "Не удалось связаться с сервером.";
+      message.className = "message error";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Зарегистрировать компанию";
+    }
+  });
+  </script>
+</body>
+</html>

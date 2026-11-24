@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>Вход владельца — FORMA MARKETPLACE</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">FORMA MARKETPLACE · ЗАКРЫТАЯ ЗОНА УПРАВЛЕНИЯ</div>
+  <header>
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная">
+      <span class="brand-mark" aria-hidden="true">F</span>
+      <span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · ADMIN</span></span>
+    </a>
+    <a class="button-ghost" href="/">← На главную</a>
+  </header>
+  <main>
+    <section class="card card-padded" aria-labelledby="loginTitle" style="max-width:470px;margin:0 auto">
+      <div class="eyebrow">Владелец платформы</div>
+      <h1 id="loginTitle">Вход в панель управления</h1>
+      <p class="intro" style="color:var(--muted);font-size:12px;margin-bottom:20px">Введите учётные данные администратора FORMA MARKETPLACE.</p>
+
+      <form id="adminLoginForm" novalidate>
+        <label for="adminEmail" class="field-label">Электронная почта</label>
+        <input class="field-control" id="adminEmail" name="email" type="email" autocomplete="username" inputmode="email" required maxlength="254">
+
+        <label for="adminPassword" class="field-label">Пароль</label>
+        <div class="password-wrap" style="position:relative">
+          <input class="field-control" id="adminPassword" name="password" type="password" autocomplete="current-password" required style="padding-right:90px">
+          <button class="toggle-password" id="togglePassword" type="button" aria-pressed="false" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--gold-dark);font-size:11px;cursor:pointer">Показать</button>
+        </div>
+
+        <button class="submit" id="submitButton" type="submit" style="width:100%;min-height:47px;margin-top:20px;border:0;border-radius:999px;color:var(--white);background:var(--graphite);font-size:12px;font-weight:600;cursor:pointer">Войти в админ-панель</button>
+        <p class="message" id="loginMessage" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="security-note" style="display:flex;align-items:flex-start;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft);color:var(--muted-soft);font-size:10px;line-height:1.6"><span style="color:var(--gold);font-size:14px" aria-hidden="true">✦</span><div>Доступ предоставляется только при действительной административной сессии. Аккаунт продавца не даёт прав владельца.</div></div>
+    </section>
+  </main>
+  <footer style="padding:20px 16px;color:var(--muted-soft);text-align:center;font-size:10px">FORMA MARKETPLACE © 2026</footer>
+
+  <script>
+    const form = document.getElementById("adminLoginForm");
+    const emailInput = document.getElementById("adminEmail");
+    const passwordInput = document.getElementById("adminPassword");
+    const togglePassword = document.getElementById("togglePassword");
+    const submitButton = document.getElementById("submitButton");
+    const message = document.getElementById("loginMessage");
+
+    togglePassword.addEventListener("click", () => {
+      const showPassword = passwordInput.type === "password";
+      passwordInput.type = showPassword ? "text" : "password";
+      togglePassword.textContent = showPassword ? "Скрыть" : "Показать";
+      togglePassword.setAttribute("aria-pressed", String(showPassword));
+    });
+
+    submitButton.addEventListener("mouseenter", () => { submitButton.style.background = "#4a463f"; });
+    submitButton.addEventListener("mouseleave", () => { submitButton.style.background = "var(--graphite)"; });
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      message.textContent = "";
+      message.className = "message";
+
+      if (!emailInput.value.trim() || !passwordInput.value) {
+        message.textContent = "Введите электронную почту и пароль.";
+        message.classList.add("error");
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Проверяем данные…";
+
+      try {
+        const response = await fetch("/api/admin/login", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: emailInput.value.trim(),
+            password: passwordInput.value
+          })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          message.textContent = response.status === 401
+            ? "Неверная почта или пароль. Проверьте данные и попробуйте снова."
+            : (result.message || "Не удалось выполнить вход. Попробуйте ещё раз.");
+          message.classList.add("error");
+          passwordInput.value = "";
+          passwordInput.focus();
+          return;
+        }
+
+        message.textContent = "Вход выполнен. Открываем панель…";
+        message.classList.add("success");
+        window.location.replace("/admin.html");
+      } catch {
+        message.textContent = "Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.";
+        message.classList.add("error");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Войти в админ-панель";
+      }
+    });
+
+    (async () => {
+      try {
+        const response = await fetch("/api/admin/me", {
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+        if (response.ok) window.location.replace("/admin.html");
+      } catch {
+        // Keep the sign-in form available if the status check cannot connect.
+      }
+    })();
+  </script>
+</body>
+</html>
+<style>
+html, body {
+    min-height: 100vh;
+}
+body {
+    display: flex;
+    flex-direction: column;
+}
+footer {
+    display: none !important;
+}
+</style>
+<style>
+html {
+    min-height: 100%;
+}
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex !important;
+    flex-direction: column;
+}
+header {
+    flex-shrink: 0;
+}
+main {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    box-sizing: border-box;
+}
+footer {
+    display: none !important;
+}
+@media (max-width: 600px) {
+    main {
+        padding: 20px 15px;
+    }
+    form {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
+</style>

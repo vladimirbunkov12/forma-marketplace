@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>Каталог мебели — FORMA MARKETPLACE</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Мебель казахстанских производителей · Один каталог · Прямой контакт</div>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+    <nav class="main-nav" aria-label="Основная навигация"><a href="/">Главная</a><a href="/catalog.html" aria-current="page">Каталог</a></nav>
+    <div class="header-actions"><a class="button button-outline" href="/auth-choice.html">Войти</a><a class="button button-ghost" href="/buyer-account.html">Кабинет покупателя</a><a class="button button-outline" href="/buyer-cart.html">Корзина <span class="cart-badge" id="headerCartCount">0</span></a><a class="button button-primary" href="/register.html">Стать продавцом</a></div>
+  </div></header>
+  <section class="hero wrap catalog-hero" aria-labelledby="catalogTitle"><div class="hero-panel"><div class="eyebrow">FORMA MARKETPLACE · KAZAKHSTAN</div><h1 id="catalogTitle">Предметы для жизни.<br>Выбор с характером.</h1><p>Изучайте реальные предложения мебельных компаний Казахстана, сравнивайте цены и связывайтесь с производителями.</p><div class="hero-meta" style="position:absolute;right:40px;bottom:31px;color:#8a795f;font:italic 15px Georgia,serif">Дизайн · Материалы · Мастерство</div></div></section>
+  <main class="container wrap">
+    <div class="catalog-head"><div><div class="eyebrow">Выберите своё</div><h2>Мебель от производителей</h2></div><p>Найдите подходящую модель по названию, категории и бюджету. Стоимость и продавец указаны в карточке товара.</p></div>
+    <section class="filters card card-padded catalog-filters" aria-label="Фильтры каталога">
+      <div class="field search-field"><label class="field-label" for="searchInput">Поиск по названию</label><div class="search-control"><svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><input class="field-control" id="searchInput" type="search" placeholder="Например, угловой диван" aria-label="Поиск по названию мебели"></div></div>
+      <div class="field"><label class="field-label" for="categoryFilter">Категория</label><select class="field-control" id="categoryFilter" aria-label="Фильтр по категории"><option value="">Все категории</option><option value="Кухни">Кухни</option><option value="Шкафы">Шкафы и гардеробные</option><option value="Диваны">Диваны</option><option value="Кровати">Кровати</option><option value="Столы">Столы</option><option value="Другая мебель">Другая мебель</option></select></div>
+      <div class="field"><label class="field-label" for="minPrice">Цена от, ₸</label><input class="field-control" id="minPrice" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label class="field-label" for="maxPrice">Цена до, ₸</label><input class="field-control" id="maxPrice" type="number" min="0" step="1" inputmode="numeric" placeholder="Без лимита"></div>
+      <div class="field sort-field"><label class="field-label" for="sortOrder">Сортировка по цене</label><select class="field-control" id="sortOrder" aria-label="Сортировка по цене"><option value="default">Сначала новые</option><option value="asc">Сначала дешевле</option><option value="desc">Сначала дороже</option></select></div>
+    </section>
+    <div class="filter-bottom"><span id="resultsCount" role="status" aria-live="polite" style="color:var(--muted);font-size:11px">Загрузка каталога…</span><button id="resetFilters" class="reset-button" type="button">Сбросить фильтры</button></div>
+    <section class="grid products-grid" id="productsGrid" aria-live="polite"><div class="empty">Загружаем мебель…</div></section>
+  </main>
+  <footer class="site-footer"><div class="wrap footer-row" style="display:flex;justify-content:space-between;align-items:center;gap:18px;padding-top:24px"><span style="color:var(--muted-soft);font-size:10px">FORMA MARKETPLACE — мебельная платформа Казахстана</span><a href="/" style="color:var(--gold);font-size:10px">На главную ↑</a></div></footer>
+  <script>
+    const grid=document.getElementById('productsGrid'),searchInput=document.getElementById('searchInput'),categoryFilter=document.getElementById('categoryFilter'),minPrice=document.getElementById('minPrice'),maxPrice=document.getElementById('maxPrice'),sortOrder=document.getElementById('sortOrder'),resetFilters=document.getElementById('resetFilters'),resultsCount=document.getElementById('resultsCount');let allProducts=[];
+    function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;node.textContent=text??'';return node}
+    function showMessage(text){grid.replaceChildren(el('div','empty',text))}
+    function money(value){const amount=Number(value);return Number.isFinite(amount)?new Intl.NumberFormat('ru-KZ',{maximumFractionDigits:0}).format(amount)+' ₸':'Цена по запросу'}
+    function checkoutUrl(product,dimensions){const params=new URLSearchParams({productId:String(product.id)});if(dimensions)params.set('dimensions',JSON.stringify(dimensions));return '/checkout.html?'+params.toString()}
+    function addCalculator(body,product){
+      const calc=el('div','calculator'),title=el('div','calculator-title','Калькулятор стоимости'),fields=el('div','calc-fields'),result=el('p','calc-result',''),order=el('a','button button-primary order-button','Перейти к заказу →'),dims={};calc.append(title,fields);
+      let type='',rate=0,controls=[],valid=true;
+      function addField(labelText,key,min,max,initial){const wrapper=el('div','calc-field'),label=el('label','',labelText),input=document.createElement('input');input.type='number';input.min=min;input.max=max;input.step='.1';input.value=initial;input.setAttribute('aria-label',labelText);wrapper.append(label,input);fields.appendChild(wrapper);dims[key]=Number(initial);controls.push({input,key,min:Number(min),max:Number(max)});input.addEventListener('input',update)}
+      if(product.category==='Кухни'&&Number(product.kitchen_per_meter)>0){type='kitchen';rate=Number(product.kitchen_per_meter);addField('Длина, м','length',.5,30,3)}else if(product.category==='Шкафы'&&Number(product.wardrobe_per_sqm)>0){type='wardrobe';rate=Number(product.wardrobe_per_sqm);addField('Ширина, м','width',.1,20,2);addField('Высота, м','height',.1,10,2.4)}
+      function update(){valid=true;for(const c of controls){const n=Number(c.input.value);if(!Number.isFinite(n)||n<c.min||n>c.max)valid=false;else dims[c.key]=n}let total=0;if(valid&&type==='kitchen'){total=Math.round(dims.length*rate);dims.type='kitchen';dims.unit='meter'}else if(valid&&type==='wardrobe'){dims.area=Math.round(dims.width*dims.height*100)/100;dims.type='wardrobe';dims.unit='sqm';total=Math.round(dims.width*dims.height*rate)}result.classList.toggle('calc-error',!valid);result.textContent=type?(valid?'Предварительно: '+money(total):type==='kitchen'?'Длина кухни: от 0,5 до 30 м':'Ширина 0,1–20 м, высота 0,1–10 м'):'Цена указана в карточке';order.href=checkoutUrl(product,valid&&type?dims:null);order.setAttribute('aria-disabled',String(!valid))}
+      order.addEventListener('click',event=>{if(!valid)event.preventDefault()});update();calc.append(result,order);body.appendChild(calc);return ()=>{if(!valid)throw new Error("Проверьте размеры мебели");return type?{...dims}:null}}
+    function productCard(product){const card=el('article','card product-card'),imageWrap=el('div','image-wrap product-image-wrap'),img=document.createElement('img');img.className='product-image';img.src=product.photoUrl||'';img.alt=product.name||'Мебель';img.loading='lazy';img.onerror=()=>img.replaceWith(el('div','image-fallback product-image-placeholder','Фото временно недоступно'));imageWrap.append(img,el('span','category product-category',product.category||'Мебель'));const body=el('div','card-body product-info');body.append(el('h3','',product.name||'Мебель'),el('div','price product-price',money(product.price)),el('p','description product-maker',product.description||'Описание не указано.'),el('div','company','Продавец: '+(product.company_name||'Компания')+' · '+(product.city||'Казахстан')));const getDimensions=addCalculator(body,product);const phone=String(product.company_phone||'').replace(/\D/g,'');if(phone.length>=10&&phone.length<=15){const actions=el('div','card-actions product-actions'),link=el('a','whatsapp-button','Написать продавцу в WhatsApp'),text='Здравствуйте! Меня заинтересовал товар «'+(product.name||'Мебель')+'» на FORMA MARKETPLACE.';link.href='https://wa.me/'+phone+'?text='+encodeURIComponent(text);link.target='_blank';link.rel='noopener noreferrer';actions.appendChild(link);body.appendChild(actions)}
+    const addBtn=el('button','button button-primary button-sm','В корзину');addBtn.type='button';addBtn.onclick=async()=>{try{const resp=await fetch('/api/buyer/cart',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({productId:product.id,quantity:1,dimensions:getDimensions()})});if(resp.status===401){location.href='/buyer-account.html';return}const data=await resp.json();if(!resp.ok||!data.success)throw new Error(data.message||'Не удалось добавить в корзину');addBtn.textContent='В корзине ✓';addBtn.disabled=true;updateCartBadge()}catch(e){alert(e.message)}};body.appendChild(addBtn);card.append(imageWrap,body);return card}
+    function render(){const q=searchInput.value.trim().toLocaleLowerCase('ru-RU'),category=categoryFilter.value,min=minPrice.value===''?null:Number(minPrice.value),max=maxPrice.value===''?null:Number(maxPrice.value);if(min!==null&&max!==null&&min>max){resultsCount.textContent='Проверьте диапазон стоимости';showMessage('Цена «от» не должна превышать цену «до».');return}let list=allProducts.filter(p=>{const name=String(p.name||'').toLocaleLowerCase('ru-RU'),price=Number(p.price);return(!q||name.includes(q))&&(!category||p.category===category)&&(min===null||price>=min)&&(max===null||price<=max)});if(sortOrder.value==='asc')list=list.slice().sort((a,b)=>Number(a.price)-Number(b.price));else if(sortOrder.value==='desc')list=list.slice().sort((a,b)=>Number(b.price)-Number(a.price));resultsCount.textContent='Найдено товаров: '+list.length;grid.replaceChildren();if(!list.length){showMessage(allProducts.length?'По заданным параметрам мебель не найдена. Измените фильтры и попробуйте ещё раз.':'В каталоге пока нет опубликованных товаров.');return}list.forEach(p=>grid.appendChild(productCard(p)))}
+    async function loadProducts(){try{const response=await fetch('/api/products');if(!response.ok)throw new Error('Ошибка сервера');const data=await response.json();if(!data.success||!Array.isArray(data.products))throw new Error('Неверный формат данных');allProducts=data.products;resultsCount.textContent='Загружено товаров: '+allProducts.length;render()}catch(error){resultsCount.textContent='Не удалось загрузить каталог';showMessage('Не удалось загрузить товары. Проверьте соединение и попробуйте обновить страницу.');console.error('Ошибка загрузки каталога:',error)}}
+    [searchInput,categoryFilter,minPrice,maxPrice,sortOrder].forEach(control=>control.addEventListener(control===categoryFilter||control===sortOrder?'change':'input',render));resetFilters.addEventListener('click',()=>{searchInput.value='';categoryFilter.value='';minPrice.value='';maxPrice.value='';sortOrder.value='default';render()});loadProducts();
+
+    // Счётчик корзины в шапке
+    async function updateCartBadge() {
+      try {
+        const response = await fetch("/api/buyer/cart/count", { credentials: "same-origin" });
+        if (response.ok) {
+          const data = await response.json();
+          const badge = document.getElementById("headerCartCount");
+          if (badge) badge.textContent = data.count || 0;
+        }
+      } catch {}
+    }
+    updateCartBadge();
+  </script>
+<script>
+(async function(){
+ const header=document.querySelector('.header-actions'); if(!header)return;
+ const login=header.querySelector('a[href="/auth-choice.html"]');
+ const account=header.querySelector('a[href="/buyer-account.html"]');
+ const cart=header.querySelector('a[href="/buyer-cart.html"]');
+ const register=header.querySelector('a[href="/register.html"]');
+ try {
+  const buyer=await fetch('/api/buyer/me',{credentials:'same-origin',cache:'no-store'});
+  if(buyer.ok && (await buyer.json()).success){if(login)login.hidden=true;if(register)register.hidden=true;return;}
+  const seller=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'});
+  if(seller.ok){if(login){login.href='/dashboard.html';login.textContent='Кабинет продавца';}if(account)account.hidden=true;if(cart)cart.hidden=true;if(register)register.hidden=true;}
+ }catch{}
+})();
+</script></body>
+</html>

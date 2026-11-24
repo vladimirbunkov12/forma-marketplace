@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Регистрация покупателя — FORMA MARKETPLACE</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="topline">Регистрация покупателя · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <a class="button-ghost" href="/auth-choice.html">Назад к входу</a>
+  <div class="header-actions"></div>
+</div></header>
+
+<main class="container wrap">
+  <h1 style="font-size:28px;margin-bottom:8px">Регистрация покупателя</h1>
+  <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:24px">Создайте аккаунт, чтобы отслеживать заказы и сохранять адрес доставки.</p>
+
+  <form id="buyerRegisterForm" class="card card-padded" style="max-width:470px">
+    <div class="field-group">
+      <label class="field-label" for="regName">Имя</label>
+      <input class="field-control" id="regName" type="text" placeholder="Иван Иванов" autocomplete="name" required maxlength="150">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="regEmail">Электронная почта</label>
+      <input class="field-control" id="regEmail" type="email" placeholder="ivan@example.kz" autocomplete="email" required maxlength="254">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="regPhone">Телефон</label>
+      <input class="field-control" id="regPhone" type="tel" placeholder="+7 700 000 00 00" autocomplete="tel" required maxlength="30">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="regPassword">Пароль</label>
+      <input class="field-control" id="regPassword" type="password" placeholder="Придумайте пароль" autocomplete="new-password" required minlength="8" maxlength="128">
+    </div>
+    <button type="submit" id="regSubmitButton" class="button button-primary" style="width:100%;margin-top:8px">Создать аккаунт</button>
+  </form>
+  <p id="regMessage" role="status" class="message" style="font-size:12px;margin-top:14px"></p>
+  <p style="color:var(--muted);font-size:12px;margin-top:16px">Уже есть аккаунт? <a href="/buyer-account.html" style="color:var(--gold);font-weight:600">Войти</a></p>
+</main>
+
+<script>
+const form = document.getElementById("buyerRegisterForm");
+const button = document.getElementById("regSubmitButton");
+const message = document.getElementById("regMessage");
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  button.disabled = true;
+  button.textContent = "Создаём аккаунт…";
+  message.textContent = "";
+
+  try {
+    const response = await fetch("/api/buyer/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: document.getElementById("regName").value.trim(),
+        email: document.getElementById("regEmail").value.trim(),
+        phone: document.getElementById("regPhone").value.trim(),
+        password: document.getElementById("regPassword").value
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Ошибка регистрации");
+    }
+
+    message.textContent = "Аккаунт создан! Перенаправляем в каталог…";
+    message.className = "message success";
+    form.reset();
+    setTimeout(() => { location.href = "/catalog.html"; }, 800);
+  } catch (error) {
+    message.textContent = error.message;
+    message.className = "message error";
+    button.disabled = false;
+    button.textContent = "Создать аккаунт";
+  }
+});
+</script>
+
+</body>
+</html>

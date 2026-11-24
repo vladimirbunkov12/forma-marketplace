@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F4EF">
+  <title>Личный кабинет — FORMA MARKETPLACE</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="topline">Кабинет покупателя · FORMA MARKETPLACE</div>
+  <header class="site-header"><div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+    <a class="button-ghost" href="/">Вернуться в каталог</a>
+    <div class="header-actions"><a class="button button-outline" href="/buyer-cart.html">Корзина <span class="cart-badge" id="headerCartCount">0</span></a><button id="buyerLogoutButton" class="button button-outline" type="button">Выйти</button></div>
+  </div></header>
+  <main class="container wrap">
+    <section id="loginSection" class="card card-padded" style="max-width:470px;margin-bottom:24px">
+      <h3 style="font-size:18px;margin-bottom:8px">Вход покупателя</h3>
+      <form id="buyerLoginForm">
+        <div class="field-group">
+          <label class="field-label" for="buyerEmail">Электронная почта</label>
+          <input class="field-control" id="buyerEmail" type="email" placeholder="Электронная почта" autocomplete="email" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="buyerPassword">Пароль</label>
+          <input class="field-control" id="buyerPassword" type="password" placeholder="Пароль" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="button button-primary button-sm">Войти</button>
+      </form>
+      <p id="loginMessage" role="status" class="message" style="font-size:12px"></p>
+    </section>
+
+    <h2 style="font-size:22px;margin-bottom:16px">Личный кабинет покупателя</h2>
+
+    <section class="card card-padded">
+      <h3 style="font-size:18px;margin-bottom:12px">Мой профиль</h3>
+      <div id="profile" style="color:var(--muted);font-size:13px">Загрузка профиля...</div>
+      <form id="addressForm" style="margin-top:20px">
+        <div class="field-group">
+          <label class="field-label" for="deliveryAddress">Изменить адрес доставки</label>
+          <input class="field-control" id="deliveryAddress" type="text" placeholder="Город, улица, дом, квартира" minlength="5" maxlength="300" required>
+        </div>
+        <button type="submit" id="saveAddressButton" class="button button-primary button-sm">Сохранить адрес</button>
+        <p id="addressMessage" role="status" aria-live="polite" class="message" style="font-size:12px;margin-top:10px"></p>
+      </form>
+    </section>
+
+    <section class="card card-padded">
+      <h3 style="font-size:18px;margin-bottom:12px">Мои заказы</h3>
+      <div id="orders" style="color:var(--muted);font-size:13px">Загрузка заказов...</div>
+    </section>
+  </main>
+
+  <script>
+    const profileEl = document.getElementById("profile");
+    const ordersEl = document.getElementById("orders");
+
+    function addInfo(container, label, value) {
+      const line = document.createElement("div");
+      line.className = "info";
+      line.style.cssText = "display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:13px";
+
+      const heading = document.createElement("span");
+      heading.textContent = label + ": ";
+      heading.style.color = "var(--muted)";
+
+      const content = document.createElement("strong");
+      content.textContent = value || "Не указано";
+      content.style.color = "var(--graphite)";
+
+      line.append(heading, content);
+      container.appendChild(line);
+    }
+
+    async function loadProfile() {
+      try {
+        const response = await fetch("/api/buyer/me", {
+          credentials: "same-origin"
+        });
+        if (response.status === 401) {
+          profileEl.textContent = "Для просмотра профиля войдите в аккаунт покупателя.";
+          ordersEl.textContent = "Авторизуйтесь, чтобы увидеть свои заказы.";
+          return false;
+        }
+        if (!response.ok) throw new Error("Ошибка загрузки профиля");
+
+        const data = await response.json();
+        if (!data.success || !data.buyer) {
+          throw new Error("Профиль не найден");
+        }
+
+        profileEl.replaceChildren();
+        addInfo(profileEl, "Имя", data.buyer.name);
+        addInfo(profileEl, "Телефон", data.buyer.phone);
+        addInfo(profileEl, "Email", data.buyer.email);
+        addInfo(profileEl, "Адрес доставки", data.buyer.delivery_address);
+        return true;
+      } catch (error) {
+        profileEl.textContent = "Не удалось загрузить профиль.";
+        profileEl.style.color = "#a6483d";
+        return false;
+      }
+    }
+
+    async function loadOrders() {
+      try {
+        const response = await fetch("/api/buyer/orders", {
+          credentials: "same-origin"
+        });
+        if (!response.ok) throw new Error("Ошибка загрузки заказов");
+
+        const data = await response.json();
+        if (!data.success || !Array.isArray(data.orders)) {
+          throw new Error("Неверный ответ сервера");
+        }
+
+        ordersEl.replaceChildren();
+
+        if (data.orders.length === 0) {
+          ordersEl.textContent = "У вас пока нет заказов.";
+          ordersEl.style.color = "var(--muted)";
+          return;
+        }
+
+        const statuses = {
+          new: "Новый заказ",
+          processing: "В работе",
+          ready: "Готов",
+          completed: "Завершён",
+          cancelled: "Отменён"
+        };
+
+        const paymentStatuses = {
+          awaiting_payment: "Ожидает оплаты",
+          paid: "Оплачен",
+          paid_test: "Тестовая отметка оплаты",
+          payment_test_marked: "Тестовая отметка оплаты"
+        };
+
+        for (const order of data.orders) {
+          const card = document.createElement("div");
+          card.className = "order-card card card-sm";
+
+          const head = document.createElement("div");
+          head.className = "order-head";
+
+          const number = document.createElement("strong");
+          number.className = "order-number";
+          number.textContent = "Заказ №" + order.id;
+
+          const price = document.createElement("div");
+          price.className = "order-total";
+          price.textContent = Number(order.total_amount || 0)
+            .toLocaleString("ru-RU") + " ₸";
+
+          head.append(number, price);
+          card.appendChild(head);
+
+          const status = document.createElement("p");
+          status.style.cssText = "font-size:11px;font-weight:600;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.1em";
+          const statusLabel = document.createElement("span");
+          statusLabel.className = "badge badge-new";
+          statusLabel.textContent = statuses[order.status] || order.status || "Неизвестно";
+          status.appendChild(statusLabel);
+          card.appendChild(status);
+
+          const info = document.createElement("div");
+          info.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px 16px";
+          addInfo2(info, "Оплата",
+            paymentStatuses[order.payment_status] ||
+            order.payment_status || "Не указано");
+          addInfo2(info, "Город", order.delivery_city);
+          addInfo2(info, "Адрес", order.delivery_address);
+          addInfo2(info, "Дата", order.created_at);
+          card.appendChild(info);
+
+          ordersEl.appendChild(card);
+        }
+      } catch (error) {
+        ordersEl.textContent = "Не удалось загрузить заказы.";
+        ordersEl.style.color = "#a6483d";
+      }
+    }
+
+    function addInfo2(container, label, value) {
+      const line = document.createElement("div");
+      line.style.cssText = "font-size:12px;color:var(--graphite-soft)";
+      const strong=document.createElement("strong"); strong.textContent=label+": "; line.append(strong,document.createTextNode(String(value ?? "Не указано")));
+      container.appendChild(line);
+    }
+
+    async function init() {
+      const authenticated = await loadProfile();
+      if (authenticated) await loadOrders();
+    }
+    const loginForm = document.getElementById("buyerLoginForm");
+    const loginSection = document.getElementById("loginSection");
+    const loginMessage = document.getElementById("loginMessage");
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById("buyerEmail").value.trim();
+      const password = document.getElementById("buyerPassword").value;
+
+      loginMessage.textContent = "Выполняется вход...";
+
+      try {
+        const response = await fetch("/api/buyer/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          loginMessage.textContent = data.message || "Ошибка входа";
+          loginMessage.style.color = "#a6483d";
+          return;
+        }
+
+        document.getElementById("buyerPassword").value = "";
+        loginMessage.textContent = "";
+        location.href = "/catalog.html";
+      } catch (error) {
+        loginMessage.textContent = "Не удалось подключиться к серверу.";
+        loginMessage.style.color = "#a6483d";
+      }
+    });
+
+    const originalLoadProfile = loadProfile;
+
+    loadProfile = async function() {
+      const authenticated = await originalLoadProfile();
+      loginSection.style.display = authenticated ? "none" : "block";
+      return authenticated;
+    };
+    init();
+
+  /// Выход покупателя
+  document.getElementById("buyerLogoutButton").addEventListener("click", async () => {
+    try {
+      const response = await fetch("/logout", { method: "POST", credentials: "same-origin" });
+      if (response.ok) location.href = "/";
+    } catch (error) {
+      console.error("Ошибка выхода:", error);
+    }
+  });
+
+  /// Сохранение адреса доставки
+  document.getElementById("addressForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    const addressInput = document.getElementById("deliveryAddress");
+    const message = document.getElementById("addressMessage");
+    const button = document.getElementById("saveAddressButton");
+
+    const address = addressInput.value.trim();
+
+    if (address.length < 5 || address.length > 300) {
+      message.textContent = "Укажите адрес от 5 до 300 символов.";
+      message.style.color = "#a6483d";
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = "Сохраняем адрес...";
+    message.style.color = "var(--muted)";
+
+    try {
+      const response = await fetch("/api/buyer/address", {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          delivery_address: address
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Ошибка сохранения");
+      }
+
+      message.textContent = "Адрес успешно сохранён!";
+      message.style.color = "#516744";
+      await loadProfile();
+
+    } catch (error) {
+      message.textContent = error.message || "Не удалось сохранить адрес.";
+      message.style.color = "#a6483d";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // Счётчик корзины в шапке
+  async function updateCartBadge() {
+    try {
+      const response = await fetch("/api/buyer/cart/count", { credentials: "same-origin" });
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById("headerCartCount");
+        if (badge) badge.textContent = data.count || 0;
+      }
+    } catch {}
+  }
+  updateCartBadge();
+  </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F4EF">
+<title>Вход — FORMA MARKETPLACE</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="topline">Вход в аккаунт · FORMA MARKETPLACE</div>
+<header class="site-header"><div class="wrap header-inner">
+  <a class="brand" href="/" aria-label="FORMA MARKETPLACE — главная"><span class="brand-mark" aria-hidden="true">F</span><span class="brand-name"><strong>FORMA</strong><span>MARKETPLACE · KZ</span></span></a>
+  <a class="button-ghost" href="/">На главную</a>
+    <div class="header-actions"><a class="button button-outline" href="/buyer-cart.html">Корзина <span class="cart-badge" id="headerCartCount">0</span></a></div>
+</div></header>
+
+<main class="container wrap">
+  <h1 style="font-size:28px;margin-bottom:8px">Вход в аккаунт</h1>
+  <p class="subtitle" style="color:var(--muted);font-size:13px;margin-bottom:24px">Выберите, под каким аккаунтом вы хотите войти.</p>
+
+  <div class="auth-choice">
+    <article class="auth-card">
+      <span class="auth-icon" aria-hidden="true">👤</span>
+      <h3>Покупатель</h3>
+      <p>Просматривайте заказы, сохраняйте адрес доставки и следите за статусом покупок.</p>
+      <a href="/buyer-account.html" class="button button-primary" style="width:100%">Войти как покупатель</a>
+    </article>
+    <article class="auth-card">
+      <span class="auth-icon" aria-hidden="true">🏪</span>
+      <h3>Продавец</h3>
+      <p>Управляйте товарами, заказами и финансами своей мебельной компании.</p>
+      <a href="/login.html" class="button button-primary" style="width:100%">Войти как продавец</a>
+    </article>
+  </div>
+
+  <p class="subtitle" style="color:var(--muted);font-size:13px;margin-top:32px">Ещё нет аккаунта покупателя?</p>
+  <a href="/buyer-register.html" class="button button-outline" style="display:inline-flex;align-items:center;gap:8px">Создать аккаунт покупателя <span aria-hidden="true">→</span></a>
+</main>
+
+<script>
+  async function updateCartBadge() {
+    try {
+      const response = await fetch("/api/buyer/cart/count", { credentials: "same-origin" });
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById("headerCartCount");
+        if (badge) badge.textContent = data.count || 0;
+      }
+    } catch {}
+  }
+  updateCartBadge();
+</script>
+
+</body>
+</html>
