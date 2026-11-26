@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 const path = require("path");
 const pool = require("./postgres");
@@ -10,18 +10,18 @@ function createRequireAdmin(db) {
       const adminId = session.adminId;
       const companyId = session.companyId;
 
-      const admin = Number.isSafeInteger(adminId) && adminId > 0
-        ? (await pool.query("SELECT id FROM admin_users WHERE id = $1", [adminId])).rows[0]
+      const admin = Number.isSafeInteger(Number(adminId)) && Number(adminId) > 0
+        ? (await pool.query("SELECT id FROM admin_users WHERE id = $1", [Number(adminId)])).rows[0]
         : null;
-      const seller = Number.isSafeInteger(companyId) && companyId > 0
-        ? (await pool.query("SELECT id FROM companies WHERE id = $1", [companyId])).rows[0]
+      const seller = Number.isSafeInteger(Number(companyId)) && Number(companyId) > 0
+        ? (await pool.query("SELECT id FROM companies WHERE id = $1", [Number(companyId)])).rows[0]
         : null;
 
       // A session carrying both identities is ambiguous and must never gain admin access.
       if (admin && seller) {
         return res.status(403).json({
           success: false,
-          message: "Сессия продавца не может использовать административный доступ."
+          message: "РЎРµСЃСЃРёСЏ РїСЂРѕРґР°РІС†Р° РЅРµ РјРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РёРІРЅС‹Р№ РґРѕСЃС‚СѓРї."
         });
       }
 
@@ -34,19 +34,19 @@ function createRequireAdmin(db) {
       if (seller) {
         return res.status(403).json({
           success: false,
-          message: "Доступ разрешён только администратору."
+          message: "Р”РѕСЃС‚СѓРї СЂР°Р·СЂРµС€С‘РЅ С‚РѕР»СЊРєРѕ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂСѓ."
         });
       }
 
       return res.status(401).json({
         success: false,
-        message: "Требуется действительная сессия администратора."
+        message: "РўСЂРµР±СѓРµС‚СЃСЏ РґРµР№СЃС‚РІРёС‚РµР»СЊРЅР°СЏ СЃРµСЃСЃРёСЏ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°."
       });
     } catch (error) {
-      console.error("Ошибка проверки административной сессии:", error);
+      console.error("РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё Р°РґРјРёРЅРёСЃС‚СЂР°С‚РёРІРЅРѕР№ СЃРµСЃСЃРёРё:", error);
       return res.status(500).json({
         success: false,
-        message: "Не удалось проверить административный доступ."
+        message: "РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РёРІРЅС‹Р№ РґРѕСЃС‚СѓРї."
       });
     }
   };
@@ -61,7 +61,7 @@ function requireSameOriginForMutations(req, res, next) {
   if (fetchSite && fetchSite.toLowerCase() === "cross-site") {
     return res.status(403).json({
       success: false,
-      message: "Запрос отклонён проверкой CSRF."
+      message: "Р—Р°РїСЂРѕСЃ РѕС‚РєР»РѕРЅС‘РЅ РїСЂРѕРІРµСЂРєРѕР№ CSRF."
     });
   }
 
@@ -83,7 +83,7 @@ function requireSameOriginForMutations(req, res, next) {
   if (!requestOrigin || requestOrigin !== expectedOrigin) {
     return res.status(403).json({
       success: false,
-      message: "Запрос отклонён проверкой CSRF."
+      message: "Р—Р°РїСЂРѕСЃ РѕС‚РєР»РѕРЅС‘РЅ РїСЂРѕРІРµСЂРєРѕР№ CSRF."
     });
   }
 
@@ -117,7 +117,7 @@ function createAdminPageGuard(db, adminPagePath) {
         .normalize(decodeURIComponent(req.path))
         .toLowerCase();
     } catch {
-      return res.status(400).send("Некорректный URL.");
+      return res.status(400).send("РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ URL.");
     }
 
     if (normalizedPath !== "/admin.html") return next();
@@ -128,11 +128,11 @@ function createAdminPageGuard(db, adminPagePath) {
       const session = req.session || {};
       const adminId = session.adminId;
       const companyId = session.companyId;
-      const admin = Number.isSafeInteger(adminId) && adminId > 0
-        ? (await pool.query("SELECT id FROM admin_users WHERE id = $1", [adminId])).rows[0]
+      const admin = Number.isSafeInteger(Number(adminId)) && Number(adminId) > 0
+        ? (await pool.query("SELECT id FROM admin_users WHERE id = $1", [Number(adminId)])).rows[0]
         : null;
-      const seller = Number.isSafeInteger(companyId) && companyId > 0
-        ? (await pool.query("SELECT id FROM companies WHERE id = $1", [companyId])).rows[0]
+      const seller = Number.isSafeInteger(Number(companyId)) && Number(companyId) > 0
+        ? (await pool.query("SELECT id FROM companies WHERE id = $1", [Number(companyId)])).rows[0]
         : null;
 
       if (admin && !seller) {
@@ -145,8 +145,8 @@ function createAdminPageGuard(db, adminPagePath) {
 
       return res.redirect(302, "/admin-login.html");
     } catch (error) {
-      console.error("Ошибка проверки доступа к панели владельца:", error);
-      return res.status(500).send("Не удалось проверить доступ к панели владельца.");
+      console.error("РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё РґРѕСЃС‚СѓРїР° Рє РїР°РЅРµР»Рё РІР»Р°РґРµР»СЊС†Р°:", error);
+      return res.status(500).send("РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ РґРѕСЃС‚СѓРї Рє РїР°РЅРµР»Рё РІР»Р°РґРµР»СЊС†Р°.");
     }
   };
 }
@@ -157,3 +157,4 @@ module.exports = {
   createAdminPageGuard,
   requireSameOriginForMutations
 };
+
