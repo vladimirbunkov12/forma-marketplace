@@ -1,4 +1,4 @@
-
+﻿
 require("dotenv").config();
 
 const express = require("express");
@@ -32,8 +32,8 @@ if (process.env.RENDER === "true" && process.env.NODE_ENV === "production") {
 }
 const PORT = process.env.PORT || 3000;
 
-// Доверяем только явно заданным HTTPS reverse proxy адресам в production.
-// Прокси должен перезаписывать X-Forwarded-* заголовки от внешнего клиента.
+// Р”РѕРІРµСЂСЏРµРј С‚РѕР»СЊРєРѕ СЏРІРЅРѕ Р·Р°РґР°РЅРЅС‹Рј HTTPS reverse proxy Р°РґСЂРµСЃР°Рј РІ production.
+// РџСЂРѕРєСЃРё РґРѕР»Р¶РµРЅ РїРµСЂРµР·Р°РїРёСЃС‹РІР°С‚СЊ X-Forwarded-* Р·Р°РіРѕР»РѕРІРєРё РѕС‚ РІРЅРµС€РЅРµРіРѕ РєР»РёРµРЅС‚Р°.
 if (
   process.env.NODE_ENV === "production" &&
   process.env.HTTPS_PROXY_TERMINATION === "true" &&
@@ -49,7 +49,7 @@ if (
       app.set("trust proxy", trustedProxyIps);
     } catch {
       throw new Error(
-        "TRUST_PROXY_IPS должен содержать корректные адреса доверенного HTTPS-прокси."
+        "TRUST_PROXY_IPS РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РєРѕСЂСЂРµРєС‚РЅС‹Рµ Р°РґСЂРµСЃР° РґРѕРІРµСЂРµРЅРЅРѕРіРѕ HTTPS-РїСЂРѕРєСЃРё."
       );
     }
   }
@@ -61,26 +61,26 @@ app.use(express.urlencoded({
   limit: "20kb"
 }));
 
-// Сессии пользователей
+// РЎРµСЃСЃРёРё РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
 const sessionSecret =
   process.env.SESSION_SECRET ||
   crypto.randomBytes(32).toString("hex");
 
 if (!process.env.SESSION_SECRET) {
   console.warn(
-    "ВНИМАНИЕ: временный ключ сессий. " +
-    "Для публикации задайте SESSION_SECRET."
+    "Р’РќРРњРђРќРР•: РІСЂРµРјРµРЅРЅС‹Р№ РєР»СЋС‡ СЃРµСЃСЃРёР№. " +
+    "Р”Р»СЏ РїСѓР±Р»РёРєР°С†РёРё Р·Р°РґР°Р№С‚Рµ SESSION_SECRET."
   );
 }
 
-// Ограничение попыток входа: 5 запросов за 15 минут с одного IP.
-// Действует для входа продавца, администратора и покупателя.
+// РћРіСЂР°РЅРёС‡РµРЅРёРµ РїРѕРїС‹С‚РѕРє РІС…РѕРґР°: 5 Р·Р°РїСЂРѕСЃРѕРІ Р·Р° 15 РјРёРЅСѓС‚ СЃ РѕРґРЅРѕРіРѕ IP.
+// Р”РµР№СЃС‚РІСѓРµС‚ РґР»СЏ РІС…РѕРґР° РїСЂРѕРґР°РІС†Р°, Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР° Рё РїРѕРєСѓРїР°С‚РµР»СЏ.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: {
     success: false,
-    message: "Слишком много попыток входа. Попробуйте позже через 15 минут."
+    message: "РЎР»РёС€РєРѕРј РјРЅРѕРіРѕ РїРѕРїС‹С‚РѕРє РІС…РѕРґР°. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ С‡РµСЂРµР· 15 РјРёРЅСѓС‚."
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -90,6 +90,7 @@ const loginLimiter = rateLimit({
 let sessionStore;
 
 if (process.env.DATABASE_URL) {
+  console.log("DATABASE HOST:", new URL(process.env.DATABASE_URL).hostname);
   const PgSessionStore = require("connect-pg-simple")(session);
 
   sessionStore = new PgSessionStore({
@@ -135,11 +136,11 @@ app.use(session({
 app.use("/api/admin", createAdminApiGuard(db));
 app.use("/api/buyer", requireSameOriginForMutations);
 
-// Папка фотографий
+// РџР°РїРєР° С„РѕС‚РѕРіСЂР°С„РёР№
 const uploadsDir = path.join(__dirname, "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
-// Настройка загрузки фотографий
+// РќР°СЃС‚СЂРѕР№РєР° Р·Р°РіСЂСѓР·РєРё С„РѕС‚РѕРіСЂР°С„РёР№
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
@@ -170,19 +171,19 @@ const upload = multer({
     ];
 
     if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Недопустимый формат фотографии."));
+      return cb(new Error("РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ С„РѕСЂРјР°С‚ С„РѕС‚РѕРіСЂР°С„РёРё."));
     }
 
     cb(null, true);
   }
 });
 
-// Проверка входа
+// РџСЂРѕРІРµСЂРєР° РІС…РѕРґР°
 async function requireLogin(req, res, next) {
   if (!req.session.companyId) {
     return res.status(401).json({
       success: false,
-      message: "Сначала войдите в аккаунт."
+      message: "РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚."
     });
   }
 
@@ -197,7 +198,7 @@ async function requireLogin(req, res, next) {
       req.session.destroy(() => {});
       return res.status(401).json({
         success: false,
-        message: "Аккаунт не найден."
+        message: "РђРєРєР°СѓРЅС‚ РЅРµ РЅР°Р№РґРµРЅ."
       });
     }
 
@@ -205,17 +206,17 @@ async function requireLogin(req, res, next) {
       req.session.destroy(() => {});
       return res.status(403).json({
         success: false,
-        message: "Ваш аккаунт заблокирован."
+        message: "Р’Р°С€ Р°РєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ."
       });
     }
 
     next();
   } catch (error) {
-    console.error("Ошибка проверки аккаунта:", error);
+    console.error("РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё Р°РєРєР°СѓРЅС‚Р°:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Ошибка проверки доступа."
+      message: "РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё РґРѕСЃС‚СѓРїР°."
     });
   }
 }
@@ -226,7 +227,7 @@ app.use(createAdminPageGuard(
   path.join(__dirname, "public", "admin.html")
 ));
 
-// Страницы сайта
+// РЎС‚СЂР°РЅРёС†С‹ СЃР°Р№С‚Р°
 const publicPages = new Set(["index.html","catalog.html","checkout.html","dashboard.html","login.html","register.html","admin.html","admin-login.html","buyer-account.html","buyer-register.html","buyer-cart.html","buyer-payment.html","auth-choice.html","add-product.html","edit-product.html","seller-prices.html","styles.css"]);
 app.use((req,res,next) => {
   if (req.path === "/" || publicPages.has(req.path.slice(1))) return express.static(path.join(__dirname,"public"))(req,res,next);
@@ -265,7 +266,7 @@ app.get("/buyer-payment", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "buyer-payment.html"));
 });
 
-// Регистрация компании
+// Р РµРіРёСЃС‚СЂР°С†РёСЏ РєРѕРјРїР°РЅРёРё
 app.post("/register", async (req, res) => {
   try {
     const {
@@ -284,7 +285,7 @@ app.post("/register", async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Для регистрации необходимо принять соглашение о комиссии версии 1.0."
+        message: "Р”Р»СЏ СЂРµРіРёСЃС‚СЂР°С†РёРё РЅРµРѕР±С…РѕРґРёРјРѕ РїСЂРёРЅСЏС‚СЊ СЃРѕРіР»Р°С€РµРЅРёРµ Рѕ РєРѕРјРёСЃСЃРёРё РІРµСЂСЃРёРё 1.0."
       });
     }
 
@@ -307,7 +308,7 @@ app.post("/register", async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Проверьте поля. Пароль: от 8 до 128 символов."
+        message: "РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕР»СЏ. РџР°СЂРѕР»СЊ: РѕС‚ 8 РґРѕ 128 СЃРёРјРІРѕР»РѕРІ."
       });
     }
 
@@ -316,7 +317,7 @@ app.post("/register", async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return res.status(400).json({
         success: false,
-        message: "Введите правильную почту."
+        message: "Р’РІРµРґРёС‚Рµ РїСЂР°РІРёР»СЊРЅСѓСЋ РїРѕС‡С‚Сѓ."
       });
     }
 
@@ -327,7 +328,7 @@ app.post("/register", async (req, res) => {
     if (existing) {
       return res.status(409).json({
         success: false,
-        message: "Такая почта уже зарегистрирована."
+        message: "РўР°РєР°СЏ РїРѕС‡С‚Р° СѓР¶Рµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅР°."
       });
     }
 
@@ -349,26 +350,26 @@ app.post("/register", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Компания успешно зарегистрирована!"
+      message: "РљРѕРјРїР°РЅРёСЏ СѓСЃРїРµС€РЅРѕ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅР°!"
     });
   } catch (error) {
-    console.error("Ошибка регистрации:", error);
+    console.error("РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё:", error);
 
     if (error.code === "23505") {
       return res.status(409).json({
         success: false,
-        message: "Такая почта уже зарегистрирована."
+        message: "РўР°РєР°СЏ РїРѕС‡С‚Р° СѓР¶Рµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅР°."
       });
     }
 
     res.status(500).json({
       success: false,
-      message: "Ошибка сервера."
+      message: "РћС€РёР±РєР° СЃРµСЂРІРµСЂР°."
     });
   }
 });
 
-// Вход в аккаунт
+// Р’С…РѕРґ РІ Р°РєРєР°СѓРЅС‚
 app.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -381,7 +382,7 @@ app.post("/login", loginLimiter, async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Введите почту и пароль."
+        message: "Р’РІРµРґРёС‚Рµ РїРѕС‡С‚Сѓ Рё РїР°СЂРѕР»СЊ."
       });
     }
 
@@ -392,7 +393,7 @@ app.post("/login", loginLimiter, async (req, res) => {
     if (!company) {
       return res.status(401).json({
         success: false,
-        message: "Неверная почта или пароль."
+        message: "РќРµРІРµСЂРЅР°СЏ РїРѕС‡С‚Р° РёР»Рё РїР°СЂРѕР»СЊ."
       });
     }
 
@@ -404,23 +405,23 @@ app.post("/login", loginLimiter, async (req, res) => {
     if (!validPassword) {
       return res.status(401).json({
         success: false,
-        message: "Неверная почта или пароль."
+        message: "РќРµРІРµСЂРЅР°СЏ РїРѕС‡С‚Р° РёР»Рё РїР°СЂРѕР»СЊ."
       });
     }
 
     if (company.is_blocked === 1) {
       return res.status(403).json({
         success: false,
-        message: "Ваш аккаунт заблокирован. Обратитесь к администрации FORMA."
+        message: "Р’Р°С€ Р°РєРєР°СѓРЅС‚ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ. РћР±СЂР°С‚РёС‚РµСЃСЊ Рє Р°РґРјРёРЅРёСЃС‚СЂР°С†РёРё FORMA."
       });
     }
 
     req.session.regenerate((error) => {
       if (error) {
-        console.error("Ошибка сессии:", error);
+        console.error("РћС€РёР±РєР° СЃРµСЃСЃРёРё:", error);
         return res.status(500).json({
           success: false,
-          message: "Ошибка входа."
+          message: "РћС€РёР±РєР° РІС…РѕРґР°."
         });
       }
 
@@ -428,16 +429,16 @@ app.post("/login", loginLimiter, async (req, res) => {
 
       req.session.save((error) => {
         if (error) {
-          console.error("Ошибка сохранения сессии:", error);
+          console.error("РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ СЃРµСЃСЃРёРё:", error);
           return res.status(500).json({
             success: false,
-            message: "Ошибка входа."
+            message: "РћС€РёР±РєР° РІС…РѕРґР°."
           });
         }
 
         res.json({
           success: true,
-          message: "Вход выполнен успешно!",
+          message: "Р’С…РѕРґ РІС‹РїРѕР»РЅРµРЅ СѓСЃРїРµС€РЅРѕ!",
           company: {
             id: company.id,
             name: company.company_name,
@@ -447,15 +448,15 @@ app.post("/login", loginLimiter, async (req, res) => {
       });
     });
   } catch (error) {
-    console.error("Ошибка входа:", error);
+    console.error("РћС€РёР±РєР° РІС…РѕРґР°:", error);
     res.status(500).json({
       success: false,
-      message: "Ошибка сервера."
+      message: "РћС€РёР±РєР° СЃРµСЂРІРµСЂР°."
     });
   }
 });
 
-// Данные компании
+// Р”Р°РЅРЅС‹Рµ РєРѕРјРїР°РЅРёРё
 app.get("/api/me", requireLogin, async (req, res) => {
   const company = await db.prepare(`
     SELECT
@@ -472,7 +473,7 @@ app.get("/api/me", requireLogin, async (req, res) => {
   if (!company) {
     return res.status(401).json({
       success: false,
-      message: "Аккаунт не найден."
+      message: "РђРєРєР°СѓРЅС‚ РЅРµ РЅР°Р№РґРµРЅ."
     });
   }
 
@@ -493,7 +494,7 @@ app.patch("/api/me/pickup-address", requireLogin, async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Укажите адрес склада от 5 до 300 символов"
+        message: "РЈРєР°Р¶РёС‚Рµ Р°РґСЂРµСЃ СЃРєР»Р°РґР° РѕС‚ 5 РґРѕ 300 СЃРёРјРІРѕР»РѕРІ"
       });
     }
 
@@ -507,27 +508,27 @@ app.patch("/api/me/pickup-address", requireLogin, async (req, res) => {
     if (result.changes === 0) {
       return res.status(404).json({
         success: false,
-        message: "Компания не найдена"
+        message: "РљРѕРјРїР°РЅРёСЏ РЅРµ РЅР°Р№РґРµРЅР°"
       });
     }
 
     return res.json({
       success: true,
-      message: "Адрес склада успешно сохранён!",
+      message: "РђРґСЂРµСЃ СЃРєР»Р°РґР° СѓСЃРїРµС€РЅРѕ СЃРѕС…СЂР°РЅС‘РЅ!",
       pickup_address: normalizedAddress
     });
 
   } catch (error) {
-    console.error("Ошибка сохранения адреса склада:", error);
+    console.error("РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°РґСЂРµСЃР° СЃРєР»Р°РґР°:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Ошибка сервера"
+      message: "РћС€РёР±РєР° СЃРµСЂРІРµСЂР°"
     });
   }
 });
 
-// Публикация мебели
+// РџСѓР±Р»РёРєР°С†РёСЏ РјРµР±РµР»Рё
 app.post(
   "/api/products",
   requireLogin,
@@ -537,17 +538,17 @@ app.post(
       const { name, category, price, description } = req.body;
 
       const categories = [
-  "Кухни",
-  "Шкафы",
-  "Диваны",
-  "Кровати",
-  "Столы",
-  "Другая мебель"
+  "РљСѓС…РЅРё",
+  "РЁРєР°С„С‹",
+  "Р”РёРІР°РЅС‹",
+  "РљСЂРѕРІР°С‚Рё",
+  "РЎС‚РѕР»С‹",
+  "Р”СЂСѓРіР°СЏ РјРµР±РµР»СЊ"
 ];
 
       const priceNumber = Number(price);
 
-      // Характеристики упаковки для доставки
+      // РҐР°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё СѓРїР°РєРѕРІРєРё РґР»СЏ РґРѕСЃС‚Р°РІРєРё
       const deliveryFields = [
         "weight_kg",
         "length_cm",
@@ -571,7 +572,7 @@ app.post(
             value <= 0 ||
             value > 100000
           ) {
-            throw new Error("Некорректное значение: " + field);
+            throw new Error("РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ: " + field);
           }
 
           return value;
@@ -606,11 +607,11 @@ app.post(
 
         return res.status(400).json({
           success: false,
-          message: "Проверьте название, категорию, цену, описание и фотографию."
+          message: "РџСЂРѕРІРµСЂСЊС‚Рµ РЅР°Р·РІР°РЅРёРµ, РєР°С‚РµРіРѕСЂРёСЋ, С†РµРЅСѓ, РѕРїРёСЃР°РЅРёРµ Рё С„РѕС‚РѕРіСЂР°С„РёСЋ."
         });
       }
 
-      // Проверяем сигнатуру изображения
+      // РџСЂРѕРІРµСЂСЏРµРј СЃРёРіРЅР°С‚СѓСЂСѓ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
       const bytes = Buffer.alloc(12);
       const fd = fs.openSync(req.file.path, "r");
       try {
@@ -639,7 +640,7 @@ app.post(
         fs.unlinkSync(req.file.path);
         return res.status(400).json({
           success: false,
-          message: "Файл не является допустимой фотографией."
+          message: "Р¤Р°Р№Р» РЅРµ СЏРІР»СЏРµС‚СЃСЏ РґРѕРїСѓСЃС‚РёРјРѕР№ С„РѕС‚РѕРіСЂР°С„РёРµР№."
         });
       }
 
@@ -651,7 +652,7 @@ app.post(
         fs.unlinkSync(req.file.path);
         return res.status(401).json({
           success: false,
-          message: "Аккаунт не найден."
+          message: "РђРєРєР°СѓРЅС‚ РЅРµ РЅР°Р№РґРµРЅ."
         });
       }
 
@@ -674,11 +675,11 @@ app.post(
 
       res.status(201).json({
         success: true,
-        message: "Товар успешно опубликован!",
+        message: "РўРѕРІР°СЂ СѓСЃРїРµС€РЅРѕ РѕРїСѓР±Р»РёРєРѕРІР°РЅ!",
         productId: result.lastInsertRowid.toString()
       });
     } catch (error) {
-      console.error("Ошибка публикации:", error);
+      console.error("РћС€РёР±РєР° РїСѓР±Р»РёРєР°С†РёРё:", error);
 
       if (req.file) {
         fs.unlink(req.file.path, () => {});
@@ -686,13 +687,13 @@ app.post(
 
       res.status(500).json({
         success: false,
-        message: "Не удалось сохранить товар."
+        message: "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ С‚РѕРІР°СЂ."
       });
     }
   }
 );
 
-// Список товаров
+// РЎРїРёСЃРѕРє С‚РѕРІР°СЂРѕРІ
 app.get("/api/products", async (req, res) => {
   try {
     const products = await db.prepare(`
@@ -725,25 +726,25 @@ app.get("/api/products", async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error("Ошибка получения товаров:", error);
+    console.error("РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ С‚РѕРІР°СЂРѕРІ:", error);
 
     res.status(500).json({
       success: false,
-      message: "Не удалось загрузить товары."
+      message: "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РѕРІР°СЂС‹."
     });
   }
 });
 
-// Показываем фотографии
+// РџРѕРєР°Р·С‹РІР°РµРј С„РѕС‚РѕРіСЂР°С„РёРё
 app.use("/uploads", express.static(uploadsDir));
 
-// Выход из аккаунта
+// Р’С‹С…РѕРґ РёР· Р°РєРєР°СѓРЅС‚Р°
 app.post("/logout", async (req, res) => {
   req.session.destroy((error) => {
     if (error) {
       return res.status(500).json({
         success: false,
-        message: "Не удалось выйти."
+        message: "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹Р№С‚Рё."
       });
     }
 
@@ -751,33 +752,33 @@ app.post("/logout", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Вы вышли из аккаунта."
+      message: "Р’С‹ РІС‹С€Р»Рё РёР· Р°РєРєР°СѓРЅС‚Р°."
     });
   });
 });
 
-// Ошибки загрузки фотографий
+// РћС€РёР±РєРё Р·Р°РіСЂСѓР·РєРё С„РѕС‚РѕРіСЂР°С„РёР№
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     return res.status(400).json({
       success: false,
       message: error.code === "LIMIT_FILE_SIZE"
-        ? "Фотография не должна превышать 5 МБ."
-        : "Ошибка загрузки фотографии."
+        ? "Р¤РѕС‚РѕРіСЂР°С„РёСЏ РЅРµ РґРѕР»Р¶РЅР° РїСЂРµРІС‹С€Р°С‚СЊ 5 РњР‘."
+        : "РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С„РѕС‚РѕРіСЂР°С„РёРё."
     });
   }
 
   if (error) {
     return res.status(400).json({
       success: false,
-      message: error.message || "Ошибка запроса."
+      message: error.message || "РћС€РёР±РєР° Р·Р°РїСЂРѕСЃР°."
     });
   }
 
   next();
 });
 
-// Запуск сервера
+// Р—Р°РїСѓСЃРє СЃРµСЂРІРµСЂР°
 app.put("/api/products/:id", requireLogin, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -786,7 +787,7 @@ app.put("/api/products/:id", requireLogin, async (req, res) => {
     if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Неверный ID товара"
+        message: "РќРµРІРµСЂРЅС‹Р№ ID С‚РѕРІР°СЂР°"
       });
     }
 
@@ -802,7 +803,7 @@ app.put("/api/products/:id", requireLogin, async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Заполните все поля правильно"
+        message: "Р—Р°РїРѕР»РЅРёС‚Рµ РІСЃРµ РїРѕР»СЏ РїСЂР°РІРёР»СЊРЅРѕ"
       });
     }
 
@@ -814,7 +815,7 @@ app.put("/api/products/:id", requireLogin, async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: "Товар не найден"
+        message: "РўРѕРІР°СЂ РЅРµ РЅР°Р№РґРµРЅ"
       });
     }
 
@@ -841,7 +842,7 @@ app.put("/api/products/:id", requireLogin, async (req, res) => {
       if (typeof rawValue !== "number" && typeof rawValue !== "string") {
         return res.status(400).json({
           success: false,
-          message: "Некорректное значение: " + field
+          message: "РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ: " + field
         });
       }
 
@@ -849,7 +850,7 @@ app.put("/api/products/:id", requireLogin, async (req, res) => {
       if (!Number.isFinite(value) || value <= 0 || value > 100000) {
         return res.status(400).json({
           success: false,
-          message: "Некорректное значение: " + field
+          message: "РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ: " + field
         });
       }
 
@@ -877,15 +878,15 @@ app.put("/api/products/:id", requireLogin, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Товар успешно обновлён"
+      message: "РўРѕРІР°СЂ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»С‘РЅ"
     });
 
   } catch (error) {
-    console.error("Ошибка редактирования:", error);
+    console.error("РћС€РёР±РєР° СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ:", error);
 
     res.status(500).json({
       success: false,
-      message: "Ошибка обновления товара"
+      message: "РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С‚РѕРІР°СЂР°"
     });
   }
 });
@@ -900,7 +901,7 @@ app.delete("/api/products/:id", requireLogin, async (req, res) => {
     if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Неверный ID товара"
+        message: "РќРµРІРµСЂРЅС‹Р№ ID С‚РѕРІР°СЂР°"
       });
     }
 
@@ -912,7 +913,7 @@ app.delete("/api/products/:id", requireLogin, async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: "Товар не найден"
+        message: "РўРѕРІР°СЂ РЅРµ РЅР°Р№РґРµРЅ"
       });
     }
 
@@ -923,14 +924,14 @@ app.delete("/api/products/:id", requireLogin, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Товар удалён"
+      message: "РўРѕРІР°СЂ СѓРґР°Р»С‘РЅ"
     });
 
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Ошибка удаления товара"
+      message: "РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ С‚РѕРІР°СЂР°"
     });
   }
 });
@@ -950,7 +951,7 @@ app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), async (
       removeUploadedFile();
       return res.status(400).json({
         success: false,
-        message: "Неверный ID товара"
+        message: "РќРµРІРµСЂРЅС‹Р№ ID С‚РѕРІР°СЂР°"
       });
     }
 
@@ -962,14 +963,14 @@ app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), async (
       removeUploadedFile();
       return res.status(404).json({
         success: false,
-        message: "Товар не найден"
+        message: "РўРѕРІР°СЂ РЅРµ РЅР°Р№РґРµРЅ"
       });
     }
 
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Выберите фотографию"
+        message: "Р’С‹Р±РµСЂРёС‚Рµ С„РѕС‚РѕРіСЂР°С„РёСЋ"
       });
     }
 
@@ -979,24 +980,24 @@ app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), async (
 
     return res.json({
       success: true,
-      message: "Фотография обновлена"
+      message: "Р¤РѕС‚РѕРіСЂР°С„РёСЏ РѕР±РЅРѕРІР»РµРЅР°"
     });
   } catch (error) {
     removeUploadedFile();
-    console.error("Ошибка обновления фотографии:", error);
+    console.error("РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С„РѕС‚РѕРіСЂР°С„РёРё:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Ошибка обновления фотографии"
+      message: "РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С„РѕС‚РѕРіСЂР°С„РёРё"
     });
   }
 });
 
 
 
-/* FORMA MARKETPLACE — расценки продавцов */
+/* FORMA MARKETPLACE вЂ” СЂР°СЃС†РµРЅРєРё РїСЂРѕРґР°РІС†РѕРІ */
 
-// Получить расценки своей компании
+// РџРѕР»СѓС‡РёС‚СЊ СЂР°СЃС†РµРЅРєРё СЃРІРѕРµР№ РєРѕРјРїР°РЅРёРё
 app.get("/api/seller-prices", requireLogin, async (req, res) => {
   try {
     const prices = await db.prepare(`
@@ -1013,16 +1014,16 @@ app.get("/api/seller-prices", requireLogin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Ошибка получения расценок:", error);
+    console.error("РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЂР°СЃС†РµРЅРѕРє:", error);
 
     res.status(500).json({
       success: false,
-      message: "Не удалось получить расценки"
+      message: "РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ СЂР°СЃС†РµРЅРєРё"
     });
   }
 });
 
-// Сохранить расценки своей компании
+// РЎРѕС…СЂР°РЅРёС‚СЊ СЂР°СЃС†РµРЅРєРё СЃРІРѕРµР№ РєРѕРјРїР°РЅРёРё
 app.put("/api/seller-prices", requireLogin, async (req, res) => {
   try {
     const kitchen = Number(req.body?.kitchen_per_meter);
@@ -1038,7 +1039,7 @@ app.put("/api/seller-prices", requireLogin, async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Введите корректные цены в тенге"
+        message: "Р’РІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅС‹Рµ С†РµРЅС‹ РІ С‚РµРЅРіРµ"
       });
     }
 
@@ -1063,15 +1064,15 @@ app.put("/api/seller-prices", requireLogin, async (req, res) => {
 
     res.json({
       success: true,
-      message: "Расценки сохранены"
+      message: "Р Р°СЃС†РµРЅРєРё СЃРѕС…СЂР°РЅРµРЅС‹"
     });
 
   } catch (error) {
-    console.error("Ошибка сохранения расценок:", error);
+    console.error("РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ СЂР°СЃС†РµРЅРѕРє:", error);
 
     res.status(500).json({
       success: false,
-      message: "Не удалось сохранить расценки"
+      message: "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ СЂР°СЃС†РµРЅРєРё"
     });
   }
 });
@@ -1090,9 +1091,9 @@ const registerYandexSettings = require("./yandex-settings");
 registerYandexSettings(app, db, requireLogin);
 registerAdminRoutes(app, db);
 
-// Production pre-flight: запрет запуска с демонстрационной доставкой,
-// небезопасным SESSION_SECRET или битой настройкой YANDEX_KEYS_SECRET.
-// Значения секретов в ошибках не выводятся.
+// Production pre-flight: Р·Р°РїСЂРµС‚ Р·Р°РїСѓСЃРєР° СЃ РґРµРјРѕРЅСЃС‚СЂР°С†РёРѕРЅРЅРѕР№ РґРѕСЃС‚Р°РІРєРѕР№,
+// РЅРµР±РµР·РѕРїР°СЃРЅС‹Рј SESSION_SECRET РёР»Рё Р±РёС‚РѕР№ РЅР°СЃС‚СЂРѕР№РєРѕР№ YANDEX_KEYS_SECRET.
+// Р—РЅР°С‡РµРЅРёСЏ СЃРµРєСЂРµС‚РѕРІ РІ РѕС€РёР±РєР°С… РЅРµ РІС‹РІРѕРґСЏС‚СЃСЏ.
 if (process.env.NODE_ENV === "production") {
   const problems = [];
 
@@ -1101,13 +1102,13 @@ if (process.env.NODE_ENV === "production") {
     process.env.SESSION_SECRET.length < 32
   ) {
     problems.push(
-      "SESSION_SECRET не задан или слишком короткий (минимум 32 символа)."
+      "SESSION_SECRET РЅРµ Р·Р°РґР°РЅ РёР»Рё СЃР»РёС€РєРѕРј РєРѕСЂРѕС‚РєРёР№ (РјРёРЅРёРјСѓРј 32 СЃРёРјРІРѕР»Р°)."
     );
   }
 
   if (process.env.ENABLE_DEMO_DELIVERY === "true") {
     problems.push(
-      "ENABLE_DEMO_DELIVERY=true: демонстрационная доставка не разрешена в production."
+      "ENABLE_DEMO_DELIVERY=true: РґРµРјРѕРЅСЃС‚СЂР°С†РёРѕРЅРЅР°СЏ РґРѕСЃС‚Р°РІРєР° РЅРµ СЂР°Р·СЂРµС€РµРЅР° РІ production."
     );
   }
 
@@ -1116,19 +1117,20 @@ if (process.env.NODE_ENV === "production") {
     !/^[0-9a-f]{64}$/i.test(process.env.YANDEX_KEYS_SECRET)
   ) {
     problems.push(
-      "YANDEX_KEYS_SECRET задан неверно: ожидается ровно 64 шестнадцатеричных символа."
+      "YANDEX_KEYS_SECRET Р·Р°РґР°РЅ РЅРµРІРµСЂРЅРѕ: РѕР¶РёРґР°РµС‚СЃСЏ СЂРѕРІРЅРѕ 64 С€РµСЃС‚РЅР°РґС†Р°С‚РµСЂРёС‡РЅС‹С… СЃРёРјРІРѕР»Р°."
     );
   }
 
   if (problems.length > 0) {
     throw new Error(
-      "FORMA MARKETPLACE не может запуститься в production: " +
+      "FORMA MARKETPLACE РЅРµ РјРѕР¶РµС‚ Р·Р°РїСѓСЃС‚РёС‚СЊСЃСЏ РІ production: " +
         problems.join(" ")
     );
   }
 }
 
 app.listen(PORT, () => {
-  console.log(`FORMA MARKETPLACE запущен на порту ${PORT}`);
+  console.log(`FORMA MARKETPLACE Р·Р°РїСѓС‰РµРЅ РЅР° РїРѕСЂС‚Сѓ ${PORT}`);
 });
+
 
