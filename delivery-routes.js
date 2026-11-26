@@ -21,7 +21,7 @@ const orderCreateLimiter = rateLimit({
 module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
 
   // Оформление заказа покупателем (с защитой от CSRF и ограничением частоты)
-  app.post("/api/orders", orderCreateLimiter, requireSameOriginForMutations, (req, res) => {
+  app.post("/api/orders", orderCreateLimiter, requireSameOriginForMutations, async (req, res) => {
     try {
       const {
         productId,
@@ -61,7 +61,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
       }
 
       // Получаем товар и расценки его продавца
-      const product = db.prepare(`
+      const product = await db.prepare(`
         SELECT
           products.id,
           products.company_id,
@@ -90,7 +90,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
       }
 
       // Проверка существования и блокировки компании продавца
-      const company = db.prepare(`SELECT is_blocked FROM companies WHERE id = ?`).get(
+      const company = await db.prepare(`SELECT is_blocked FROM companies WHERE id = ?`).get(
         product.company_id
       );
 
@@ -187,8 +187,8 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
       }
 
       // Создаём заказ, товар и доставку одной транзакцией
-      const createOrder = db.transaction(() => {
-        const sellerCommission = db.prepare(`
+      const createOrder = db.transaction(async () => {
+        const sellerCommission = await db.prepare(`
           SELECT commission_rate_bps
           FROM companies
           WHERE id = ?
@@ -216,7 +216,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         );
         const sellerAmount = total - commissionAmount;
 
-        const sellerDeliverySettings = db.prepare(`
+        const sellerDeliverySettings = await db.prepare(`
           SELECT payment_by
           FROM seller_delivery_settings
           WHERE company_id = ?
@@ -225,7 +225,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
           ? "buyer"
           : "seller";
 
-        const order = db.prepare(`
+        const order = await db.prepare(`
           INSERT INTO orders (
             company_id,
             buyer_name,
@@ -258,7 +258,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
 
         const orderId = Number(order.lastInsertRowid);
 
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO order_items (
             order_id,
             product_id,
@@ -275,7 +275,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
           savedDimensions
         );
 
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO deliveries (
             order_id,
             delivery_mode,
@@ -303,7 +303,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         commissionRateBps,
         commissionAmount,
         sellerAmount
-      } = createOrder();
+      } = await createOrder();
 
       console.log("FORMA: создан заказ №" + orderId);
 
@@ -340,9 +340,9 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
 
 
   // Получение заказов текущего продавца
-  app.get("/api/orders", requireLogin, (req, res) => {
+  app.get("/api/orders", requireLogin, async (req, res) => {
     try {
-      const rows = db.prepare(`
+      const rows = await db.prepare(`
         SELECT
           orders.id,
           orders.buyer_name,
@@ -409,11 +409,11 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
 
   // Финансовая сводка текущей компании; считаем только по orders,
   // чтобы соединения с позициями и доставкой не дублировали суммы.
-  app.get("/api/seller/finance", requireLogin, (req, res) => {
+  app.get("/api/seller/finance", requireLogin, async (req, res) => {
     try {
       const companyId = req.session.companyId;
 
-      const summary = db.prepare(`
+      const summary = await db.prepare(`
         SELECT
           COALESCE(SUM(
             CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END
@@ -444,7 +444,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         WHERE company_id = ?
       `).get(companyId);
 
-      const rows = db.prepare(`
+      const rows = await db.prepare(`
         SELECT
           id,
           created_at,
@@ -499,7 +499,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
   });
 
   // Изменение статуса заказа продавцом
-  app.patch("/api/orders/:id/status", requireLogin, (req, res) => {
+  app.patch("/api/orders/:id/status", requireLogin, async (req, res) => {
     try {
       const orderId = Number(req.params.id);
       const newStatus = req.body?.status;
@@ -512,7 +512,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         });
       }
 
-      const order = db.prepare(`
+      const order = await db.prepare(`
         SELECT id, status
         FROM orders
         WHERE id = ? AND company_id = ?
@@ -540,7 +540,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
       }
 
       if (order.status === "in_delivery" && newStatus === "completed") {
-        const demoDelivery = db.prepare(`
+        const demoDelivery = await db.prepare(`
           SELECT is_demo
           FROM deliveries
           WHERE order_id = ?
@@ -555,7 +555,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
       }
 
       if (newStatus === "in_delivery") {
-        const delivery = db.prepare(`
+        const delivery = await db.prepare(`
           SELECT delivery_status, provider_order_id
           FROM deliveries
           WHERE order_id = ?
@@ -573,8 +573,8 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         }
       }
 
-      const updateOrder = db.transaction(() => {
-        const result = db.prepare(`
+      const updateOrder = db.transaction(async () => {
+        const result = await db.prepare(`
           UPDATE orders
           SET status = ?
           WHERE id = ? AND company_id = ? AND status = ?
@@ -585,7 +585,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         }
 
         if (newStatus === "ready_for_delivery") {
-          db.prepare(`
+          await db.prepare(`
             UPDATE deliveries
             SET delivery_status = 'awaiting_yandex_connection',
                 updated_at = CURRENT_TIMESTAMP
@@ -597,7 +597,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
         return true;
       });
 
-      if (!updateOrder()) {
+      if (!await updateOrder()) {
         return res.status(409).json({
           success: false,
           message: "Статус заказа уже изменён. Обновите список заказов."
@@ -607,7 +607,7 @@ module.exports = function registerDeliveryRoutes(app, db, requireLogin) {
       let yandexDeliveryCheck;
       if (newStatus === "ready_for_delivery") {
         try {
-          const check = checkYandexDeliveryReady(db, orderId);
+          const check = await checkYandexDeliveryReady(db, orderId);
           yandexDeliveryCheck = {
             ready: check?.ready === true,
             reason: check?.ready === true

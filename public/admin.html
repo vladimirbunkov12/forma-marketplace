@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -314,6 +314,32 @@
         }
       });
 
+      const detailsButton = document.createElement("button");
+      detailsButton.textContent = "Реквизиты";
+      detailsButton.style.cssText = "padding:8px 12px;margin-left:6px;border-radius:8px;border:1px solid #aaa;cursor:pointer;font-size:12px";
+      detailsButton.addEventListener("click", async () => {
+        detailsButton.disabled = true;
+        try {
+          const result = await request("/api/admin/companies/" + company.id + "/payment-details");
+          const d = result.details || {};
+          alert(
+            "РЕКВИЗИТЫ ПРОДАВЦА\n\n" +
+            "Компания: " + (d.company_name || "—") + "\n" +
+            "Email: " + (d.email || "—") + "\n" +
+            "Форма: " + (d.business_type === "ip" ? "ИП" : d.business_type === "too" ? "ТОО" : "Не указана") + "\n" +
+            "БИН/ИИН: " + (d.business_identifier || "Не указано") + "\n" +
+            "Банк: " + (d.bank_name || "Не указан") + "\n" +
+            "IBAN: " + (d.iban || "Не указан") + "\n" +
+            "Тип: " + (d.is_demo ? "ТЕСТОВЫЕ РЕКВИЗИТЫ" : "Обычные реквизиты")
+          );
+        } catch (error) {
+          alert("Не удалось загрузить реквизиты: " + error.message);
+          if (error.status === 401) showLogin();
+        } finally {
+          detailsButton.disabled = false;
+        }
+      });
+      actionCell.appendChild(detailsButton);
       actionCell.appendChild(button);
       row.appendChild(actionCell);
       $("companiesBody").appendChild(row);
@@ -686,3 +712,4 @@
   </script>
 </body>
 </html>
+

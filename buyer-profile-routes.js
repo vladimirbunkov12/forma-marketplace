@@ -1,8 +1,9 @@
 ﻿"use strict";
+const pool = require("./postgres");
 
 function registerBuyerProfileRoutes(app, db) {
 
-  function requireBuyer(req, res, next) {
+  async function requireBuyer(req, res, next) {
     if (!req.session || !req.session.buyerId) {
       return res.status(401).json({
         success: false,
@@ -10,9 +11,7 @@ function registerBuyerProfileRoutes(app, db) {
       });
     }
 
-    const buyer = db.prepare(
-      "SELECT id FROM buyers WHERE id = ?"
-    ).get(req.session.buyerId);
+    const buyer = (await pool.query("SELECT id FROM buyers WHERE id = $1", [req.session.buyerId])).rows[0];
 
     if (!buyer) {
       return res.status(401).json({
@@ -24,12 +23,12 @@ function registerBuyerProfileRoutes(app, db) {
     next();
   }
 
-  app.get("/api/buyer/me", requireBuyer, (req, res) => {
-    const buyer = db.prepare(`
+  app.get("/api/buyer/me", requireBuyer, async (req, res) => {
+    const buyer = (await pool.query(`
       SELECT id, name, email, phone, delivery_address, created_at
       FROM buyers
-      WHERE id = ?
-    `).get(req.session.buyerId);
+      WHERE id = $1
+    `, [req.session.buyerId])).rows[0];
 
     res.json({
       success: true,
@@ -38,7 +37,7 @@ function registerBuyerProfileRoutes(app, db) {
   });
 
   // Сохранение адреса доставки покупателя
-  app.patch("/api/buyer/address", requireBuyer, (req, res) => {
+  app.patch("/api/buyer/address", requireBuyer, async (req, res) => {
     try {
       const address = req.body?.delivery_address;
 
@@ -55,11 +54,11 @@ function registerBuyerProfileRoutes(app, db) {
 
       const cleanAddress = address.trim();
 
-      db.prepare(`
+      (await pool.query(`
         UPDATE buyers
-        SET delivery_address = ?
-        WHERE id = ?
-      `).run(cleanAddress, req.session.buyerId);
+        SET delivery_address = $1
+        WHERE id = $2
+      `, [cleanAddress, req.session.buyerId]));
 
       return res.json({
         success: true,

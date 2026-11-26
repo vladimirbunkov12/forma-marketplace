@@ -1,7 +1,8 @@
 ﻿"use strict";
+const pool = require("./postgres");
 
 function registerBuyerOrderRoutes(app, db) {
-  app.get("/api/buyer/orders", (req, res) => {
+  app.get("/api/buyer/orders", async (req, res) => {
     try {
       const buyerId = req.session && req.session.buyerId;
 
@@ -12,9 +13,7 @@ function registerBuyerOrderRoutes(app, db) {
         });
       }
 
-      const buyer = db.prepare(
-        "SELECT id FROM buyers WHERE id = ?"
-      ).get(buyerId);
+      const buyer = (await pool.query("SELECT id FROM buyers WHERE id = $1", [buyerId])).rows[0];
 
       if (!buyer) {
         return res.status(401).json({
@@ -23,7 +22,7 @@ function registerBuyerOrderRoutes(app, db) {
         });
       }
 
-      const orders = db.prepare(`
+      const orders = (await pool.query(`
         SELECT
           id,
           company_id,
@@ -34,10 +33,10 @@ function registerBuyerOrderRoutes(app, db) {
           delivery_address,
           created_at
         FROM orders
-        WHERE buyer_id = ?
+        WHERE buyer_id = $1
         ORDER BY created_at DESC, id DESC
         LIMIT 100
-      `).all(buyerId);
+      `, [buyerId])).rows;
 
       return res.json({
         success: true,

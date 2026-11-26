@@ -2,8 +2,8 @@
 
 const { getSellerYandexKey } = require("./yandex-credentials");
 
-function checkYandexDeliveryReady(db, orderId) {
-  const order = db.prepare(`
+async function checkYandexDeliveryReady(db, orderId) {
+  const order = await db.prepare(`
     SELECT company_id, status
     FROM orders
     WHERE id = ?
@@ -20,7 +20,7 @@ function checkYandexDeliveryReady(db, orderId) {
     };
   }
 
-  const delivery = db.prepare(`
+  const delivery = await db.prepare(`
     SELECT
       delivery_mode,
       delivery_provider,
@@ -60,7 +60,7 @@ function checkYandexDeliveryReady(db, orderId) {
 
   let apiKey;
   try {
-    apiKey = getSellerYandexKey(db, order.company_id);
+    apiKey = await getSellerYandexKey(db, order.company_id);
   } catch {
     return { ready: false, reason: "Не удалось проверить API-ключ Яндекс Доставки продавца." };
   }

@@ -1,4 +1,4 @@
-const bcrypt = require("bcryptjs");
+﻿const bcrypt = require("bcryptjs");
 const rateLimit = require("express-rate-limit");
 const { createRequireAdmin } = require("./admin-auth");
 
@@ -13,7 +13,8 @@ const adminLoginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = function registerAdminRoutes(app, db) {
+module.exports = function registerAdminRoutes(app, sqliteDb) {
+  const db = require("./pg-buyer-db");
   const requireAdmin = createRequireAdmin(db);
 
   // Вход владельца
@@ -34,7 +35,7 @@ module.exports = function registerAdminRoutes(app, db) {
         });
       }
 
-      const admin = db.prepare(
+      const admin = await db.prepare(
         "SELECT * FROM admin_users WHERE email = ?"
       ).get(email);
 
@@ -83,18 +84,18 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
   // Проверка авторизации владельца
-  app.get("/api/admin/me", requireAdmin, (req, res) => {
+  app.get("/api/admin/me", requireAdmin, async (req, res) => {
     res.json({
       success: true,
       admin: {
         id: req.session.adminId,
-        email: db.prepare("SELECT email FROM admin_users WHERE id = ?").get(req.session.adminId).email
+        email: (await db.prepare("SELECT email FROM admin_users WHERE id = ?").get(req.session.adminId)).email
       }
     });
   });
 
   // Выход владельца
-  app.post("/api/admin/logout", requireAdmin, (req, res) => {
+  app.post("/api/admin/logout", requireAdmin, async (req, res) => {
     req.session.destroy(error => {
       if (error) {
         return res.status(500).json({
@@ -109,8 +110,8 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
   // Список продавцов
-  app.get("/api/admin/companies", requireAdmin, (req, res) => {
-    const companies = db.prepare(`
+  app.get("/api/admin/companies", requireAdmin, async (req, res) => {
+    const companies = await db.prepare(`
       SELECT id, company_name, city, phone,
              email, is_blocked, created_at, commission_rate_bps
       FROM companies
@@ -120,10 +121,36 @@ module.exports = function registerAdminRoutes(app, db) {
     res.json({ success: true, companies });
   });
 
-  // История предложений изменения комиссии
-  app.get("/api/admin/commission-proposals", requireAdmin, (req, res) => {
+  // Просмотр реквизитов продавца — только администратор
+  app.get("/api/admin/companies/:id/payment-details", requireAdmin, async (req, res) => {
     try {
-      const proposals = db.prepare(`
+      const companyId = Number(req.params.id);
+      if (!Number.isSafeInteger(companyId) || companyId < 1) {
+        return res.status(400).json({ success: false, message: "Некорректный ID продавца." });
+      }
+      const details = await db.prepare(`
+        SELECT companies.id AS company_id, companies.company_name, companies.email,
+          seller_payment_details.business_type, seller_payment_details.business_identifier,
+          seller_payment_details.bank_name, seller_payment_details.iban,
+          seller_payment_details.is_demo, seller_payment_details.updated_at
+        FROM companies
+        LEFT JOIN seller_payment_details
+          ON seller_payment_details.company_id = companies.id
+        WHERE companies.id = ?
+      `).get(companyId);
+      if (!details) {
+        return res.status(404).json({ success: false, message: "Продавец не найден." });
+      }
+      return res.json({ success: true, details });
+    } catch (error) {
+      console.error("Ошибка загрузки реквизитов продавца:", error);
+      return res.status(500).json({ success: false, message: "Не удалось загрузить реквизиты продавца." });
+    }
+  });
+  // История предложений изменения комиссии
+  app.get("/api/admin/commission-proposals", requireAdmin, async (req, res) => {
+    try {
+      const proposals = await db.prepare(`
         SELECT
           proposals.id,
           proposals.company_id,
@@ -151,7 +178,7 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
   // Создать предложение новой ставки конкретной компании
-  app.post("/api/admin/commission-proposals", requireAdmin, (req, res) => {
+  app.post("/api/admin/commission-proposals", requireAdmin, async (req, res) => {
     const companyId = Number(req.body?.companyId);
     const newRateBps = Number(req.body?.newRateBps);
 
@@ -167,8 +194,8 @@ module.exports = function registerAdminRoutes(app, db) {
     }
 
     try {
-      const createProposal = db.transaction(() => {
-        const company = db.prepare(`
+      const createProposal = db.transaction(async () => {
+        const company = await db.prepare(`
           SELECT id, commission_rate_bps
           FROM companies
           WHERE id = ?
@@ -179,13 +206,13 @@ module.exports = function registerAdminRoutes(app, db) {
         const oldRateBps = Number(company.commission_rate_bps);
         if (oldRateBps === newRateBps) return { kind: "unchanged" };
 
-        db.prepare(`
+        await db.prepare(`
           UPDATE commission_change_proposals
           SET status = 'cancelled', decided_at = CURRENT_TIMESTAMP
           WHERE company_id = ? AND status = 'pending'
         `).run(companyId);
 
-        const result = db.prepare(`
+        const result = await db.prepare(`
           INSERT INTO commission_change_proposals (
             company_id,
             old_rate_bps,
@@ -203,7 +230,7 @@ module.exports = function registerAdminRoutes(app, db) {
         };
       });
 
-      const result = createProposal();
+      const result = await createProposal();
       if (result.kind === "not_found") {
         return res.status(404).json({
           success: false,
@@ -237,7 +264,7 @@ module.exports = function registerAdminRoutes(app, db) {
   app.patch(
     "/api/admin/companies/:id/block",
     requireAdmin,
-    (req, res) => {
+    async (req, res) => {
       const id = Number(req.params.id);
       const blocked = req.body?.blocked;
 
@@ -249,7 +276,7 @@ module.exports = function registerAdminRoutes(app, db) {
         });
       }
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         UPDATE companies
         SET is_blocked = ?
         WHERE id = ?
@@ -272,8 +299,8 @@ module.exports = function registerAdminRoutes(app, db) {
   );
 
   // Все заказы
-  app.get("/api/admin/orders", requireAdmin, (req, res) => {
-    const orders = db.prepare(`
+  app.get("/api/admin/orders", requireAdmin, async (req, res) => {
+    const orders = await db.prepare(`
       SELECT
         orders.*,
         companies.company_name
@@ -288,7 +315,7 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
   // Глобальная финансовая статистика доступна только владельцу.
-  app.get("/api/admin/finance", requireAdmin, (req, res) => {
+  app.get("/api/admin/finance", requireAdmin, async (req, res) => {
     try {
       const requestedPage = req.query?.page === undefined
         ? 1
@@ -302,7 +329,7 @@ module.exports = function registerAdminRoutes(app, db) {
       }
 
       const pageSize = 25;
-      const summary = db.prepare(`
+      const summary = await db.prepare(`
         SELECT
           (SELECT COUNT(*) FROM companies) AS company_count,
           COUNT(*) AS order_count,
@@ -347,7 +374,7 @@ module.exports = function registerAdminRoutes(app, db) {
       const page = Math.min(requestedPage, totalPages);
       const offset = (page - 1) * pageSize;
 
-      const companies = db.prepare(`
+      const companies = await db.prepare(`
         WITH company_sales AS (
           SELECT company_id, SUM(total_amount) AS sales_total
           FROM orders
@@ -362,11 +389,11 @@ module.exports = function registerAdminRoutes(app, db) {
         LEFT JOIN company_sales
           ON company_sales.company_id = companies.id
         ORDER BY sales_total DESC,
-                 companies.company_name COLLATE NOCASE ASC,
+                 LOWER(companies.company_name) ASC,
                  companies.id ASC
       `).all();
 
-      const orders = db.prepare(`
+      const orders = await db.prepare(`
         SELECT
           orders.id,
           orders.company_id,
@@ -440,7 +467,7 @@ module.exports = function registerAdminRoutes(app, db) {
         });
       }
 
-      const admin = db.prepare(
+      const admin = await db.prepare(
         "SELECT id, password_hash FROM admin_users WHERE id = ?"
       ).get(req.session.adminId);
 
@@ -460,7 +487,7 @@ module.exports = function registerAdminRoutes(app, db) {
 
       const passwordHash = await bcrypt.hash(newPassword, 12);
 
-      db.prepare(
+      await db.prepare(
         "UPDATE admin_users SET password_hash = ? WHERE id = ?"
       ).run(passwordHash, admin.id);
 
@@ -478,9 +505,9 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
   // Реквизиты платформы FORMA — получить
-  app.get("/api/admin/platform-details", requireAdmin, (req, res) => {
+  app.get("/api/admin/platform-details", requireAdmin, async (req, res) => {
     try {
-      const row = db.prepare(`
+      const row = await db.prepare(`
         SELECT company_name, bin_iin, legal_address, phone, email,
                bank_name, bik, iban, updated_at
         FROM platform_payment_details WHERE id = 1
@@ -500,7 +527,7 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
   // Реквизиты платформы FORMA — сохранить (черновик разрешен, поля не обязательны)
-  app.post("/api/admin/platform-details", requireAdmin, (req, res) => {
+  app.post("/api/admin/platform-details", requireAdmin, async (req, res) => {
     try {
       const {
         companyName, binIin, legalAddress, phone, email,
@@ -551,7 +578,7 @@ module.exports = function registerAdminRoutes(app, db) {
       const columns = Object.keys(values).join(", ");
       const placeholders = Object.keys(values).map(() => "?").join(", ");
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO platform_payment_details (id, ${columns})
         VALUES (1, ${placeholders})
         ON CONFLICT(id) DO UPDATE SET
@@ -572,3 +599,4 @@ module.exports = function registerAdminRoutes(app, db) {
   });
 
 };
+

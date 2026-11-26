@@ -10,7 +10,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const rateLimit = require("express-rate-limit");
 const BetterSqlite3 = require("better-sqlite3");
-const db = require("./database");
+const db = require("./pg-buyer-db");
 const registerDeliveryRoutes = require("./delivery-routes");
 const registerBuyerRoutes = require("./buyer-routes");
 const registerBuyerCartRoutes = require("./buyer-cart-routes");
@@ -86,18 +86,37 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const sessionDb = new BetterSqlite3(
-  path.join(__dirname, "sessions.db")
-);
-const SqliteSessionStore =
-  require("better-sqlite3-session-store")(session);
-const sessionStore = new SqliteSessionStore({
-  client: sessionDb,
-  expired: {
-    clear: true,
-    intervalMs: 15 * 60 * 1000
-  }
-});
+
+let sessionStore;
+
+if (process.env.DATABASE_URL) {
+  const PgSessionStore = require("connect-pg-simple")(session);
+
+  sessionStore = new PgSessionStore({
+    pool: require("./postgres"),
+    tableName: "session",
+    createTableIfMissing: false
+  });
+
+  console.log("SESSION STORE: POSTGRESQL");
+} else {
+  const sessionDb = new BetterSqlite3(
+    path.join(__dirname, "sessions.db")
+  );
+
+  const SqliteSessionStore =
+    require("better-sqlite3-session-store")(session);
+
+  sessionStore = new SqliteSessionStore({
+    client: sessionDb,
+    expired: {
+      clear: true,
+      intervalMs: 15 * 60 * 1000
+    }
+  });
+
+  console.log("SESSION STORE: SQLITE");
+}
 
 app.use(session({
   store: sessionStore,
@@ -159,7 +178,7 @@ const upload = multer({
 });
 
 // Проверка входа
-function requireLogin(req, res, next) {
+async function requireLogin(req, res, next) {
   if (!req.session.companyId) {
     return res.status(401).json({
       success: false,
@@ -168,7 +187,7 @@ function requireLogin(req, res, next) {
   }
 
   try {
-    const company = db.prepare(`
+    const company = await db.prepare(`
       SELECT is_blocked
       FROM companies
       WHERE id = ?
@@ -214,35 +233,35 @@ app.use((req,res,next) => {
   next();
 });
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/register", (req, res) => {
+app.get("/register", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "register.html"));
 });
 
-app.get("/login", (req, res) => {
+app.get("/login", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-app.get("/auth-choice", (req, res) => {
+app.get("/auth-choice", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "auth-choice.html"));
 });
 
-app.get("/buyer-register", (req, res) => {
+app.get("/buyer-register", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "buyer-register.html"));
 });
 
-app.get("/buyer-account", (req, res) => {
+app.get("/buyer-account", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "buyer-account.html"));
 });
 
-app.get("/buyer-cart", (req, res) => {
+app.get("/buyer-cart", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "buyer-cart.html"));
 });
 
-app.get("/buyer-payment", (req, res) => {
+app.get("/buyer-payment", async (req, res) => {
   res.sendFile(path.join(__dirname, "public", "buyer-payment.html"));
 });
 
@@ -301,7 +320,7 @@ app.post("/register", async (req, res) => {
       });
     }
 
-    const existing = db.prepare(
+    const existing = await db.prepare(
       "SELECT id FROM companies WHERE email = ?"
     ).get(normalizedEmail);
 
@@ -314,7 +333,7 @@ app.post("/register", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO companies
       (company_name, city, phone, email, password_hash,
        commission_agreement_version, commission_agreement_accepted_at)
@@ -335,7 +354,7 @@ app.post("/register", async (req, res) => {
   } catch (error) {
     console.error("Ошибка регистрации:", error);
 
-    if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    if (error.code === "23505") {
       return res.status(409).json({
         success: false,
         message: "Такая почта уже зарегистрирована."
@@ -366,7 +385,7 @@ app.post("/login", loginLimiter, async (req, res) => {
       });
     }
 
-    const company = db.prepare(
+    const company = await db.prepare(
       "SELECT * FROM companies WHERE email = ?"
     ).get(email.trim().toLowerCase());
 
@@ -437,8 +456,8 @@ app.post("/login", loginLimiter, async (req, res) => {
 });
 
 // Данные компании
-app.get("/api/me", requireLogin, (req, res) => {
-  const company = db.prepare(`
+app.get("/api/me", requireLogin, async (req, res) => {
+  const company = await db.prepare(`
     SELECT
       id,
       company_name,
@@ -463,7 +482,7 @@ app.get("/api/me", requireLogin, (req, res) => {
   });
 });
 
-app.patch("/api/me/pickup-address", requireLogin, (req, res) => {
+app.patch("/api/me/pickup-address", requireLogin, async (req, res) => {
   try {
     const address = req.body?.pickup_address;
 
@@ -479,7 +498,7 @@ app.patch("/api/me/pickup-address", requireLogin, (req, res) => {
     }
 
     const normalizedAddress = address.trim();
-    const result = db.prepare(`
+    const result = await db.prepare(`
       UPDATE companies
       SET pickup_address = ?
       WHERE id = ?
@@ -513,7 +532,7 @@ app.post(
   "/api/products",
   requireLogin,
   upload.single("photo"),
-  (req, res) => {
+  async (req, res) => {
     try {
       const { name, category, price, description } = req.body;
 
@@ -624,7 +643,7 @@ app.post(
         });
       }
 
-      const company = db.prepare(
+      const company = await db.prepare(
         "SELECT id FROM companies WHERE id = ?"
       ).get(req.session.companyId);
 
@@ -636,7 +655,7 @@ app.post(
         });
       }
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO products
         (
           company_id, name, category, price, description, photo,
@@ -674,9 +693,9 @@ app.post(
 );
 
 // Список товаров
-app.get("/api/products", (req, res) => {
+app.get("/api/products", async (req, res) => {
   try {
-    const products = db.prepare(`
+    const products = await db.prepare(`
       SELECT
         products.id,
         products.name,
@@ -719,7 +738,7 @@ app.get("/api/products", (req, res) => {
 app.use("/uploads", express.static(uploadsDir));
 
 // Выход из аккаунта
-app.post("/logout", (req, res) => {
+app.post("/logout", async (req, res) => {
   req.session.destroy((error) => {
     if (error) {
       return res.status(500).json({
@@ -759,7 +778,7 @@ app.use((error, req, res, next) => {
 });
 
 // Запуск сервера
-app.put("/api/products/:id", requireLogin, (req, res) => {
+app.put("/api/products/:id", requireLogin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     const { name, category, price, description } = req.body;
@@ -787,7 +806,7 @@ app.put("/api/products/:id", requireLogin, (req, res) => {
       });
     }
 
-    const product = db.prepare(`
+    const product = await db.prepare(`
       SELECT id, weight_kg, length_cm, width_cm, height_cm FROM products
       WHERE id = ? AND company_id = ?
     `).get(id, req.session.companyId);
@@ -837,7 +856,7 @@ app.put("/api/products/:id", requireLogin, (req, res) => {
       deliveryValues[field] = value;
     }
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE products
       SET
         name = ?, category = ?, price = ?, description = ?,
@@ -871,7 +890,7 @@ app.put("/api/products/:id", requireLogin, (req, res) => {
   }
 });
 
-app.delete("/api/products/:id", requireLogin, (req, res) => {
+app.delete("/api/products/:id", requireLogin, async (req, res) => {
 
 
 
@@ -885,7 +904,7 @@ app.delete("/api/products/:id", requireLogin, (req, res) => {
       });
     }
 
-    const product = db.prepare(`
+    const product = await db.prepare(`
       SELECT id FROM products
       WHERE id = ? AND company_id = ?
     `).get(id, req.session.companyId);
@@ -897,7 +916,7 @@ app.delete("/api/products/:id", requireLogin, (req, res) => {
       });
     }
 
-    db.prepare(`
+    await db.prepare(`
       DELETE FROM products
       WHERE id = ? AND company_id = ?
     `).run(id, req.session.companyId);
@@ -917,7 +936,7 @@ app.delete("/api/products/:id", requireLogin, (req, res) => {
 });
 
 
-app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), (req, res) => {
+app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), async (req, res) => {
   const removeUploadedFile = () => {
     if (req.file) {
       fs.unlink(req.file.path, () => {});
@@ -935,7 +954,7 @@ app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), (req, r
       });
     }
 
-    const product = db.prepare(
+    const product = await db.prepare(
       "SELECT id, photo FROM products WHERE id = ? AND company_id = ?"
     ).get(id, req.session.companyId);
 
@@ -954,7 +973,7 @@ app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), (req, r
       });
     }
 
-    db.prepare(
+    await db.prepare(
       "UPDATE products SET photo = ? WHERE id = ? AND company_id = ?"
     ).run(req.file.filename, id, req.session.companyId);
 
@@ -978,9 +997,9 @@ app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), (req, r
 /* FORMA MARKETPLACE — расценки продавцов */
 
 // Получить расценки своей компании
-app.get("/api/seller-prices", requireLogin, (req, res) => {
+app.get("/api/seller-prices", requireLogin, async (req, res) => {
   try {
-    const prices = db.prepare(`
+    const prices = await db.prepare(`
       SELECT kitchen_per_meter, wardrobe_per_sqm
       FROM seller_prices
       WHERE company_id = ?
@@ -1004,7 +1023,7 @@ app.get("/api/seller-prices", requireLogin, (req, res) => {
 });
 
 // Сохранить расценки своей компании
-app.put("/api/seller-prices", requireLogin, (req, res) => {
+app.put("/api/seller-prices", requireLogin, async (req, res) => {
   try {
     const kitchen = Number(req.body?.kitchen_per_meter);
     const wardrobe = Number(req.body?.wardrobe_per_sqm);
@@ -1023,7 +1042,7 @@ app.put("/api/seller-prices", requireLogin, (req, res) => {
       });
     }
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO seller_prices (
         company_id,
         kitchen_per_meter,

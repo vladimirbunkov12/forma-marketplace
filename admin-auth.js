@@ -1,19 +1,20 @@
 "use strict";
 
 const path = require("path");
+const pool = require("./postgres");
 
 function createRequireAdmin(db) {
-  return function requireAdmin(req, res, next) {
+  return async function requireAdmin(req, res, next) {
     try {
       const session = req.session || {};
       const adminId = session.adminId;
       const companyId = session.companyId;
 
       const admin = Number.isSafeInteger(adminId) && adminId > 0
-        ? db.prepare("SELECT id FROM admin_users WHERE id = ?").get(adminId)
+        ? (await pool.query("SELECT id FROM admin_users WHERE id = $1", [adminId])).rows[0]
         : null;
       const seller = Number.isSafeInteger(companyId) && companyId > 0
-        ? db.prepare("SELECT id FROM companies WHERE id = ?").get(companyId)
+        ? (await pool.query("SELECT id FROM companies WHERE id = $1", [companyId])).rows[0]
         : null;
 
       // A session carrying both identities is ambiguous and must never gain admin access.
@@ -107,7 +108,7 @@ function createAdminApiGuard(db) {
 }
 
 function createAdminPageGuard(db, adminPagePath) {
-  return function adminPageGuard(req, res, next) {
+  return async function adminPageGuard(req, res, next) {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
 
     let normalizedPath;
@@ -128,10 +129,10 @@ function createAdminPageGuard(db, adminPagePath) {
       const adminId = session.adminId;
       const companyId = session.companyId;
       const admin = Number.isSafeInteger(adminId) && adminId > 0
-        ? db.prepare("SELECT id FROM admin_users WHERE id = ?").get(adminId)
+        ? (await pool.query("SELECT id FROM admin_users WHERE id = $1", [adminId])).rows[0]
         : null;
       const seller = Number.isSafeInteger(companyId) && companyId > 0
-        ? db.prepare("SELECT id FROM companies WHERE id = ?").get(companyId)
+        ? (await pool.query("SELECT id FROM companies WHERE id = $1", [companyId])).rows[0]
         : null;
 
       if (admin && !seller) {

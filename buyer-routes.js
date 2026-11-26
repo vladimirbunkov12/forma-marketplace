@@ -1,6 +1,7 @@
 "use strict";
 
 const bcrypt = require("bcryptjs");
+const pool = require("./postgres");
 const rateLimit = require("express-rate-limit");
 
 const buyerLoginLimiter = rateLimit({
@@ -48,9 +49,10 @@ function registerBuyerRoutes(app, db) {
         });
       }
 
-      const existing = db.prepare(
-        "SELECT id FROM buyers WHERE email = ?"
-      ).get(normalizedEmail);
+      const existing = (await pool.query(
+        "SELECT id FROM buyers WHERE email = $1",
+        [normalizedEmail]
+      )).rows[0];
 
       if (existing) {
         return res.status(409).json({
@@ -61,26 +63,27 @@ function registerBuyerRoutes(app, db) {
 
       const passwordHash = await bcrypt.hash(password, 12);
 
-      const created = db.prepare(`
+      const created = (await pool.query(`
         INSERT INTO buyers (name, email, phone, password_hash)
-        VALUES (?, ?, ?, ?)
-      `).run(
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+      `, [
         name.trim(),
         normalizedEmail,
         phone.trim(),
         passwordHash
-      );
+      ])).rows[0];
 
       req.session.regenerate(error => {
         if (error) return res.status(500).json({success:false,message:"Аккаунт создан. Войдите в него."});
-        req.session.buyerId = String(created.lastInsertRowid);
+        req.session.buyerId = String(created.id);
         req.session.save(error => error ? res.status(500).json({success:false,message:"Аккаунт создан. Войдите в него."}) : res.status(201).json({success:true,message:"Регистрация покупателя прошла успешно!"}));
       });
 
     } catch (error) {
       console.error("Ошибка регистрации покупателя:", error);
 
-      if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      if (error.code === "23505") {
         return res.status(409).json({
           success: false,
           message: "Эта почта уже зарегистрирована."
@@ -113,9 +116,10 @@ function registerBuyerRoutes(app, db) {
         });
       }
 
-      const buyer = db.prepare(
-        "SELECT id, name, email, password_hash FROM buyers WHERE email = ?"
-      ).get(email.trim().toLowerCase());
+      const buyer = (await pool.query(
+        "SELECT id, name, email, password_hash FROM buyers WHERE email = $1",
+        [email.trim().toLowerCase()]
+      )).rows[0];
 
       if (!buyer || !(await bcrypt.compare(password, buyer.password_hash))) {
         return res.status(401).json({

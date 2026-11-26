@@ -1,7 +1,8 @@
 "use strict";
 
-module.exports = function registerBuyerCartRoutes(app, db) {
-  function requireBuyer(req, res, next) {
+module.exports = function registerBuyerCartRoutes(app, sqliteDb) {
+  const db = require("./pg-buyer-db");
+  async function requireBuyer(req, res, next) {
     if (!req.session || !req.session.buyerId) {
       return res.status(401).json({
         success: false,
@@ -9,7 +10,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
       });
     }
 
-    const buyer = db.prepare(
+    const buyer = await db.prepare(
       "SELECT id FROM buyers WHERE id = ?"
     ).get(req.session.buyerId);
 
@@ -23,9 +24,9 @@ module.exports = function registerBuyerCartRoutes(app, db) {
     next();
   }
   // Получить содержимое корзины покупателя с данными товаров
-  app.get("/api/buyer/cart", requireBuyer, (req, res) => {
+  app.get("/api/buyer/cart", requireBuyer, async (req, res) => {
     try {
-      const items = db.prepare(`
+      const items = await db.prepare(`
         SELECT
           buyer_cart.id AS cart_item_id,
           buyer_cart.quantity,
@@ -74,9 +75,9 @@ module.exports = function registerBuyerCartRoutes(app, db) {
   });
 
   // Количество товаров в корзине (для счётчика в шапке)
-  app.get("/api/buyer/cart/count", requireBuyer, (req, res) => {
+  app.get("/api/buyer/cart/count", requireBuyer, async (req, res) => {
     try {
-      const row = db.prepare(`
+      const row = await db.prepare(`
         SELECT COALESCE(SUM(quantity), 0) AS total
         FROM buyer_cart
         WHERE buyer_id = ?
@@ -96,7 +97,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
   });
 
   // Добавить товар в корзину или обновить количество, если уже есть
-  app.post("/api/buyer/cart", requireBuyer, (req, res) => {
+  app.post("/api/buyer/cart", requireBuyer, async (req, res) => {
     try {
       const { productId, quantity, dimensions } = req.body || {};
 
@@ -113,7 +114,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
         });
       }
 
-      const product = db.prepare(
+      const product = await db.prepare(
         "SELECT id FROM products WHERE id = ?"
       ).get(productIdNum);
 
@@ -128,15 +129,15 @@ module.exports = function registerBuyerCartRoutes(app, db) {
         ? JSON.stringify(dimensions)
         : null;
 
-      const upsert = db.transaction(() => {
-        const existing = db.prepare(`
+      const upsert = db.transaction(async () => {
+        const existing = await db.prepare(`
           SELECT id, quantity FROM buyer_cart
           WHERE buyer_id = ? AND product_id = ?
         `).get(req.session.buyerId, productIdNum);
 
         if (existing) {
           const newQty = Math.min(100, Number(existing.quantity) + qty);
-          db.prepare(`
+          await db.prepare(`
             UPDATE buyer_cart
             SET quantity = ?, dimensions = COALESCE(?, dimensions), updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
@@ -144,7 +145,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
           return { cartItemId: existing.id, quantity: newQty, updated: true };
         }
 
-        const result = db.prepare(`
+        const result = await db.prepare(`
           INSERT INTO buyer_cart (buyer_id, product_id, quantity, dimensions)
           VALUES (?, ?, ?, ?)
         `).run(req.session.buyerId, productIdNum, qty, dimsJson);
@@ -152,7 +153,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
         return { cartItemId: Number(result.lastInsertRowid), quantity: qty, updated: false };
       });
 
-      const cartResult = upsert();
+      const cartResult = await upsert();
 
       return res.status(201).json({
         success: true,
@@ -171,7 +172,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
   });
 
   // Обновить количество и/или размеры товара в корзине
-  app.patch("/api/buyer/cart/:itemId", requireBuyer, (req, res) => {
+  app.patch("/api/buyer/cart/:itemId", requireBuyer, async (req, res) => {
     try {
       const itemId = Number(req.params.itemId);
       const { quantity, dimensions } = req.body || {};
@@ -216,7 +217,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
       updates.push("updated_at = CURRENT_TIMESTAMP");
       values.push(itemId, req.session.buyerId);
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         UPDATE buyer_cart
         SET ${updates.join(", ")}
         WHERE id = ? AND buyer_id = ?
@@ -243,7 +244,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
   });
 
   // Удалить товар из корзины
-  app.delete("/api/buyer/cart/:itemId", requireBuyer, (req, res) => {
+  app.delete("/api/buyer/cart/:itemId", requireBuyer, async (req, res) => {
     try {
       const itemId = Number(req.params.itemId);
 
@@ -254,7 +255,7 @@ module.exports = function registerBuyerCartRoutes(app, db) {
         });
       }
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         DELETE FROM buyer_cart
         WHERE id = ? AND buyer_id = ?
       `).run(itemId, req.session.buyerId);
@@ -280,9 +281,9 @@ module.exports = function registerBuyerCartRoutes(app, db) {
   });
 
   // Очистить корзину полностью
-  app.delete("/api/buyer/cart", requireBuyer, (req, res) => {
+  app.delete("/api/buyer/cart", requireBuyer, async (req, res) => {
     try {
-      db.prepare(`
+      await db.prepare(`
         DELETE FROM buyer_cart
         WHERE buyer_id = ?
       `).run(req.session.buyerId);

@@ -1,9 +1,9 @@
 module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) {
   // Получить текущее предложение только для компании из сессии продавца.
-  app.get("/api/seller/commission-proposal", requireLogin, (req, res) => {
+  app.get("/api/seller/commission-proposal", requireLogin, async (req, res) => {
     try {
       const companyId = req.session.companyId;
-      const company = db.prepare(`
+      const company = await db.prepare(`
         SELECT commission_rate_bps
         FROM companies
         WHERE id = ?
@@ -16,7 +16,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
         });
       }
 
-      const proposal = db.prepare(`
+      const proposal = await db.prepare(`
         SELECT id, old_rate_bps, new_rate_bps, created_at
         FROM commission_change_proposals
         WHERE company_id = ? AND status = 'pending'
@@ -42,7 +42,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
   app.post(
     "/api/seller/commission-proposals/:id/decision",
     requireLogin,
-    (req, res) => {
+    async (req, res) => {
       const proposalId = Number(req.params.id);
       const decision = req.body?.decision;
       const companyId = req.session.companyId;
@@ -56,8 +56,8 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
       }
 
       try {
-        const decideProposal = db.transaction(() => {
-          const proposal = db.prepare(`
+        const decideProposal = db.transaction(async () => {
+          const proposal = await db.prepare(`
             SELECT id, old_rate_bps, new_rate_bps, status
             FROM commission_change_proposals
             WHERE id = ? AND company_id = ?
@@ -68,7 +68,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
             return { kind: "already_decided" };
           }
 
-          const company = db.prepare(`
+          const company = await db.prepare(`
             SELECT commission_rate_bps
             FROM companies
             WHERE id = ?
@@ -78,7 +78,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
 
           if (Number(company.commission_rate_bps) !==
               Number(proposal.old_rate_bps)) {
-            db.prepare(`
+            await db.prepare(`
               UPDATE commission_change_proposals
               SET status = 'stale', decided_at = CURRENT_TIMESTAMP
               WHERE id = ? AND company_id = ? AND status = 'pending'
@@ -87,7 +87,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
           }
 
           if (decision === "accepted") {
-            const updateCompany = db.prepare(`
+            const updateCompany = await db.prepare(`
               UPDATE companies
               SET commission_rate_bps = ?
               WHERE id = ? AND commission_rate_bps = ?
@@ -98,7 +98,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
             );
 
             if (updateCompany.changes !== 1) {
-              db.prepare(`
+              await db.prepare(`
                 UPDATE commission_change_proposals
                 SET status = 'stale', decided_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND company_id = ? AND status = 'pending'
@@ -107,7 +107,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
             }
           }
 
-          const updateProposal = db.prepare(`
+          const updateProposal = await db.prepare(`
             UPDATE commission_change_proposals
             SET status = ?, decided_at = CURRENT_TIMESTAMP
             WHERE id = ? AND company_id = ? AND status = 'pending'
@@ -126,7 +126,7 @@ module.exports = function registerSellerCommissionRoutes(app, db, requireLogin) 
           };
         });
 
-        const result = decideProposal();
+        const result = await decideProposal();
         if (result.kind === "not_found") {
           return res.status(404).json({
             success: false,

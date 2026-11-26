@@ -1,7 +1,7 @@
 "use strict";
 
 module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
-  app.post("/api/orders/:id/demo-delivery", requireLogin, (req, res) => {
+  app.post("/api/orders/:id/demo-delivery", requireLogin, async (req, res) => {
     try {
       // Демо-режим разрешён только вне production и при явном включении.
       if (process.env.NODE_ENV === "production" ||
@@ -23,8 +23,8 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
         });
       }
 
-      const result = db.transaction(() => {
-        const order = db.prepare(`
+      const result = await db.transaction(async () => {
+        const order = await db.prepare(`
           SELECT id, status
           FROM orders
           WHERE id = ? AND company_id = ?
@@ -41,7 +41,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
           };
         }
 
-        const delivery = db.prepare(`
+        const delivery = await db.prepare(`
           SELECT delivery_status, provider_order_id, is_demo
           FROM deliveries
           WHERE order_id = ?
@@ -62,7 +62,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
           };
         }
 
-        db.prepare(`
+        await db.prepare(`
           UPDATE deliveries
           SET is_demo = 1,
               delivery_status = 'demo_accepted',
@@ -73,7 +73,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
             AND delivery_status = 'awaiting_yandex_connection'
         `).run(orderId);
 
-        const markedDelivery = db.prepare(`
+        const markedDelivery = await db.prepare(`
           SELECT is_demo, provider_order_id, delivery_status
           FROM deliveries
           WHERE order_id = ?
@@ -89,7 +89,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
         }
 
         return { code: 200, message: "Демо-доставка создана" };
-      }).immediate();
+      })();
 
       return res.status(result.code).json({
         success: result.code === 200,
@@ -125,7 +125,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
   ];
 
   for (const transition of demoTransitions) {
-    app.patch(transition.path, requireLogin, (req, res) => {
+    app.patch(transition.path, requireLogin, async (req, res) => {
       try {
         if (process.env.NODE_ENV === "production" ||
             process.env.ENABLE_DEMO_DELIVERY !== "true") {
@@ -145,8 +145,8 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
           });
         }
 
-        const result = db.transaction(() => {
-          const order = db.prepare(`
+        const result = await db.transaction(async () => {
+          const order = await db.prepare(`
             SELECT id, status
             FROM orders
             WHERE id = ? AND company_id = ?
@@ -156,7 +156,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
             return { code: 404, message: "Заказ не найден" };
           }
 
-          const delivery = db.prepare(`
+          const delivery = await db.prepare(`
             SELECT is_demo, provider_order_id, delivery_status
             FROM deliveries
             WHERE order_id = ?
@@ -181,7 +181,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
             };
           }
 
-          const orderUpdate = db.prepare(`
+          const orderUpdate = await db.prepare(`
             UPDATE orders
             SET status = ?
             WHERE id = ? AND company_id = ? AND status = ?
@@ -192,7 +192,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
             transition.orderFrom
           );
 
-          const deliveryUpdate = db.prepare(`
+          const deliveryUpdate = await db.prepare(`
             UPDATE deliveries
             SET delivery_status = ?, updated_at = CURRENT_TIMESTAMP
             WHERE order_id = ?
@@ -215,7 +215,7 @@ module.exports = function registerDemoDeliveryRoutes(app, db, requireLogin) {
             deliveryStatus: transition.deliveryTo,
             message: transition.message
           };
-        }).immediate();
+        })();
 
         return res.status(result.code).json({
           success: result.code === 200,

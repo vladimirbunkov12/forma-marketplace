@@ -4,9 +4,9 @@ const { encrypt, decrypt } = require("./yandex-crypto");
 module.exports = function registerYandexSettings(app, db, requireLogin) {
 
   // Получение настроек текущего магазина
-  app.get("/api/yandex-settings", requireLogin, (req, res) => {
+  app.get("/api/yandex-settings", requireLogin, async (req, res) => {
     try {
-      const row = db.prepare(`
+      const row = await db.prepare(`
         SELECT
           yandex_api_key_encrypted,
           pickup_city,
@@ -35,7 +35,7 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
   });
 
   // Сохранение API-ключа
-  app.post("/api/yandex-settings", requireLogin, (req, res) => {
+  app.post("/api/yandex-settings", requireLogin, async (req, res) => {
     try {
       const paymentBy = req.body?.payment_by;
 
@@ -47,7 +47,7 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
           });
         }
 
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO seller_delivery_settings (
             company_id,
             payment_by,
@@ -82,7 +82,7 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
 
       const encryptedKey = encrypt(apiKey);
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO seller_delivery_settings (
           company_id,
           yandex_api_key_encrypted,
@@ -111,7 +111,7 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
   });
 
   // Сохранение адреса отправления магазина
-  app.post("/api/yandex-settings/pickup", requireLogin, (req, res) => {
+  app.post("/api/yandex-settings/pickup", requireLogin, async (req, res) => {
     try {
       const city = String(req.body?.pickupCity || "").trim();
       const address = String(req.body?.pickupAddress || "").trim();
@@ -126,7 +126,7 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
         });
       }
 
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO seller_delivery_settings (
           company_id,
           pickup_city,
@@ -141,7 +141,7 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
           updated_at = CURRENT_TIMESTAMP
       `).run(req.session.companyId, city, address);
 
-      db.prepare(`
+      await db.prepare(`
         UPDATE companies
         SET pickup_address = ?
         WHERE id = ?
@@ -164,9 +164,9 @@ module.exports = function registerYandexSettings(app, db, requireLogin) {
 
   // Сохранение адреса склада текущей компании
   // Отключение доставки текущего магазина
-  app.delete("/api/yandex-settings", requireLogin, (req, res) => {
+  app.delete("/api/yandex-settings", requireLogin, async (req, res) => {
     try {
-      db.prepare(`
+      await db.prepare(`
         UPDATE seller_delivery_settings
         SET
           yandex_api_key_encrypted = NULL,

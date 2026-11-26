@@ -2,8 +2,8 @@
 
 const { decrypt } = require("./yandex-crypto");
 
-function getSellerYandexKey(db, companyId) {
-  const row = db.prepare(`
+async function getSellerYandexKey(db, companyId) {
+  const row = await db.prepare(`
     SELECT yandex_api_key_encrypted
     FROM seller_delivery_settings
     WHERE company_id = ?

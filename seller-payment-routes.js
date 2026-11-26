@@ -1,8 +1,9 @@
-module.exports = function registerSellerPaymentRoutes(app, db, requireLogin) {
+module.exports = function registerSellerPaymentRoutes(app, sqliteDb, requireLogin) {
+  const db = require("./pg-buyer-db");
   // Реквизиты читаются только для компании, идентификатор которой взят из сессии.
-  app.get("/api/seller/payment-details", requireLogin, (req, res) => {
+  app.get("/api/seller/payment-details", requireLogin, async (req, res) => {
     try {
-      const details = db.prepare(`
+      const details = await db.prepare(`
         SELECT business_type, business_identifier, bank_name, iban,
                is_demo, updated_at
         FROM seller_payment_details
@@ -23,7 +24,7 @@ module.exports = function registerSellerPaymentRoutes(app, db, requireLogin) {
   });
 
   // Создать или изменить только собственные реквизиты продавца.
-  app.put("/api/seller/payment-details", requireLogin, (req, res) => {
+  app.put("/api/seller/payment-details", requireLogin, async (req, res) => {
     const businessType = req.body?.business_type;
     const identifier = String(req.body?.business_identifier || "").trim();
     const bankName = String(req.body?.bank_name || "").trim();
@@ -93,7 +94,7 @@ module.exports = function registerSellerPaymentRoutes(app, db, requireLogin) {
     }
 
     try {
-      db.prepare(`
+      await db.prepare(`
         INSERT INTO seller_payment_details (
           company_id,
           business_type,
@@ -142,7 +143,7 @@ module.exports = function registerSellerPaymentRoutes(app, db, requireLogin) {
   });
 
   // Демонстрационная отметка: никогда не является подтверждением реальной оплаты.
-  app.post("/api/orders/:id/demo-payment", requireLogin, (req, res) => {
+  app.post("/api/orders/:id/demo-payment", requireLogin, async (req, res) => {
     if (process.env.NODE_ENV === "production") {
       return res.status(403).json({
         success: false,
@@ -160,7 +161,7 @@ module.exports = function registerSellerPaymentRoutes(app, db, requireLogin) {
     }
 
     try {
-      const result = db.prepare(`
+      const result = await db.prepare(`
         UPDATE orders
         SET payment_status = 'paid_test',
             payment_test_marked_at = CURRENT_TIMESTAMP
@@ -170,7 +171,7 @@ module.exports = function registerSellerPaymentRoutes(app, db, requireLogin) {
       `).run(orderId, req.session.companyId);
 
       if (result.changes !== 1) {
-        const ownedOrder = db.prepare(`
+        const ownedOrder = await db.prepare(`
           SELECT payment_status
           FROM orders
           WHERE id = ? AND company_id = ?

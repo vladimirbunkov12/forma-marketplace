@@ -13,8 +13,9 @@ const checkoutLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = function registerBuyerCheckoutRoutes(app, db) {
-  function requireBuyer(req, res, next) {
+module.exports = function registerBuyerCheckoutRoutes(app, sqliteDb) {
+  const db = require("./pg-buyer-db");
+  async function requireBuyer(req, res, next) {
     if (!req.session || !req.session.buyerId) {
       return res.status(401).json({
         success: false,
@@ -22,7 +23,7 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
       });
     }
 
-    const buyer = db.prepare(
+    const buyer = await db.prepare(
       "SELECT id FROM buyers WHERE id = ?"
     ).get(req.session.buyerId);
 
@@ -36,13 +37,14 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
     next();
   }
   // Оформление заказа из корзины: создаёт отдельные заказы для каждого продавца
-  app.post("/api/buyer/checkout", checkoutLimiter, requireBuyer, (req, res) => {
+  app.post("/api/buyer/checkout", checkoutLimiter, requireBuyer, async (req, res) => {
     try {
-      const buyer = db.prepare("SELECT name, phone, delivery_address FROM buyers WHERE id = ?").get(req.session.buyerId);
+      const checkout = db.transaction(async () => {
+      const buyer = await db.prepare("SELECT name, phone, delivery_address FROM buyers WHERE id = ?").get(req.session.buyerId);
       const city = typeof req.body?.deliveryCity === "string" ? req.body.deliveryCity.trim() : "";
       const address = typeof req.body?.deliveryAddress === "string" ? req.body.deliveryAddress.trim() : "";
       if (!buyer || buyer.name.trim().length < 2 || buyer.phone.replace(/\D/g, "").length < 7 || buyer.phone.replace(/\D/g, "").length > 15 || city.length < 2 || city.length > 100 || address.length < 5 || address.length > 300) return res.status(400).json({success:false,message:"Проверьте имя, телефон, город и адрес доставки."});
-      const cartItems = db.prepare(`
+      const cartItems = await db.prepare(`
         SELECT
           buyer_cart.id AS cart_item_id,
           buyer_cart.quantity,
@@ -81,7 +83,7 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
 
       // Проверяем каждый товар и компанию продавца
       for (const [companyId, sellerData] of bySeller) {
-        const company = db.prepare(`SELECT is_blocked FROM companies WHERE id = ?`).get(companyId);
+        const company = await db.prepare(`SELECT is_blocked FROM companies WHERE id = ?`).get(companyId);
         if (!company) {
           return res.status(404).json({
             success: false,
@@ -98,9 +100,9 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
 
       const createdOrders = [];
 
-      const createAllOrders = db.transaction(() => {
+      const createAllOrders = async () => {
         for (const [companyId, sellerData] of bySeller) {
-          const sellerCommission = db.prepare(`
+          const sellerCommission = await db.prepare(`
             SELECT commission_rate_bps
             FROM companies
             WHERE id = ?
@@ -172,14 +174,14 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
           );
           const sellerAmount = sellerTotal - commissionAmount;
 
-          const sellerDeliverySettings = db.prepare(`
+          const sellerDeliverySettings = await db.prepare(`
             SELECT payment_by
             FROM seller_delivery_settings
             WHERE company_id = ?
           `).get(companyId);
           const paymentBy = sellerDeliverySettings?.payment_by === "buyer" ? "buyer" : "seller";
 
-          const order = db.prepare(`
+          const order = await db.prepare(`
             INSERT INTO orders (
               company_id, buyer_name, buyer_phone, delivery_country,
               delivery_city, delivery_address, comment, total_amount,
@@ -203,13 +205,13 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
           const orderId = Number(order.lastInsertRowid);
 
           for (const oi of orderItemsToInsert) {
-            db.prepare(`
+            await db.prepare(`
               INSERT INTO order_items (order_id, product_id, quantity, unit_price, dimensions)
               VALUES (?, ?, ?, ?, ?)
             `).run(orderId, oi.product_id, oi.quantity, oi.unit_price, oi.dimensions);
           }
 
-          db.prepare(`
+          await db.prepare(`
             INSERT INTO deliveries (order_id, delivery_mode, delivery_provider, payment_by, country, delivery_status)
             VALUES (?, 'automatic', 'yandex', ?, 'Kazakhstan', 'not_requested')
           `).run(orderId, paymentBy);
@@ -227,11 +229,16 @@ module.exports = function registerBuyerCheckoutRoutes(app, db) {
         }
 
         // Очищаем корзину после успешного создания всех заказов
-        db.prepare(`DELETE FROM buyer_cart WHERE buyer_id = ?`).run(req.session.buyerId);
+        await db.prepare(`DELETE FROM buyer_cart WHERE buyer_id = ?`).run(req.session.buyerId);
+      };
+
+      await createAllOrders();
+
+      return createdOrders;
       });
+      const createdOrders = await checkout();
 
-      createAllOrders();
-
+      if (!Array.isArray(createdOrders)) return;
       console.log("FORMA: создано заказов из корзины: " + createdOrders.length);
 
       return res.json({
