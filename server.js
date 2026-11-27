@@ -526,13 +526,13 @@ app.post(
       const { name, category, price, description } = req.body;
 
       const categories = [
-  "РљСѓС…РЅРё",
-  "РЁРєР°С„С‹",
-  "Р”РёРІР°РЅС‹",
-  "РљСЂРѕРІР°С‚Рё",
-  "РЎС‚РѕР»С‹",
-  "Р”СЂСѓРіР°СЏ РјРµР±РµР»СЊ"
-];
+        "Кухни",
+        "Шкафы",
+        "Диваны",
+        "Кровати",
+        "Столы",
+        "Другая мебель"
+      ];
 
       const priceNumber = Number(price);
 
