@@ -68,6 +68,10 @@ function requireSameOriginForMutations(req, res, next) {
   let expectedOrigin;
   let requestOrigin;
   try {
+    // Use req.protocol only. Express derives it from X-Forwarded-Proto *only*
+    // when "trust proxy" is configured (Render sets it in production), so a
+    // client-supplied X-Forwarded-Proto on a direct/plain-HTTP connection is
+    // ignored and cannot be used to forge the expected origin for CSRF.
     expectedOrigin = new URL(`${req.protocol}://${req.get("host")}`).origin;
     const originHeader = req.get("origin");
     if (originHeader) {
