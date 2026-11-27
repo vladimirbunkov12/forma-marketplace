@@ -1,5 +1,3 @@
-﻿require("dotenv").config();
-
 const { Pool } = require("pg");
 
 if (!process.env.DATABASE_URL) {
@@ -8,9 +6,13 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  },
   max: 5,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 15000
+  connectionTimeoutMillis: 30000,
+  keepAlive: true
 });
 
 pool.on("error", (error) => {

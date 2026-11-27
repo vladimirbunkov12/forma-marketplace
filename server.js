@@ -1,4 +1,4 @@
-﻿
+
 require("dotenv").config();
 
 const express = require("express");
@@ -8,6 +8,7 @@ const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const crypto = require("crypto");
 const multer = require("multer");
+const { uploadImage } = require("./cloudinary-storage");
 const rateLimit = require("express-rate-limit");
 const BetterSqlite3 = require("better-sqlite3");
 const db = require("./pg-buyer-db");
@@ -141,20 +142,7 @@ const uploadsDir = path.join(__dirname, "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 // РќР°СЃС‚СЂРѕР№РєР° Р·Р°РіСЂСѓР·РєРё С„РѕС‚РѕРіСЂР°С„РёР№
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = {
-      "image/jpeg": ".jpg",
-      "image/png": ".png",
-      "image/webp": ".webp"
-    }[file.mimetype];
-
-    cb(null, crypto.randomUUID() + (ext || ".bin"));
-  }
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -579,7 +567,6 @@ app.post(
         });
       } catch (error) {
         if (req.file) {
-          fs.unlinkSync(req.file.path);
         }
 
         return res.status(400).json({
@@ -602,7 +589,6 @@ app.post(
         !req.file
       ) {
         if (req.file) {
-          fs.unlinkSync(req.file.path);
         }
 
         return res.status(400).json({
@@ -612,13 +598,7 @@ app.post(
       }
 
       // РџСЂРѕРІРµСЂСЏРµРј СЃРёРіРЅР°С‚СѓСЂСѓ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
-      const bytes = Buffer.alloc(12);
-      const fd = fs.openSync(req.file.path, "r");
-      try {
-        fs.readSync(fd, bytes, 0, 12, 0);
-      } finally {
-        fs.closeSync(fd);
-      }
+      const bytes = req.file.buffer.subarray(0, 12);
 
       const isJpeg =
         bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
@@ -637,7 +617,6 @@ app.post(
       );
 
       if (!validPhoto) {
-        fs.unlinkSync(req.file.path);
         return res.status(400).json({
           success: false,
           message: "Р¤Р°Р№Р» РЅРµ СЏРІР»СЏРµС‚СЃСЏ РґРѕРїСѓСЃС‚РёРјРѕР№ С„РѕС‚РѕРіСЂР°С„РёРµР№."
@@ -649,13 +628,13 @@ app.post(
       ).get(req.session.companyId);
 
       if (!company) {
-        fs.unlinkSync(req.file.path);
         return res.status(401).json({
           success: false,
           message: "РђРєРєР°СѓРЅС‚ РЅРµ РЅР°Р№РґРµРЅ."
         });
       }
 
+      const photoUrl = await uploadImage(req.file.buffer);
       const result = await db.prepare(`
         INSERT INTO products
         (
@@ -669,7 +648,7 @@ app.post(
         category,
         priceNumber,
         description.trim(),
-        req.file.filename,
+        photoUrl,
         ...deliveryValues
       );
 
@@ -682,7 +661,6 @@ app.post(
       console.error("РћС€РёР±РєР° РїСѓР±Р»РёРєР°С†РёРё:", error);
 
       if (req.file) {
-        fs.unlink(req.file.path, () => {});
       }
 
       res.status(500).json({
@@ -722,7 +700,7 @@ app.get("/api/products", async (req, res) => {
       success: true,
       products: products.map((product) => ({
         ...product,
-        photoUrl: "/uploads/" + product.photo
+        photoUrl: /^https?:\/\//i.test(product.photo) ? product.photo : "/uploads/" + product.photo
       }))
     });
   } catch (error) {
@@ -938,62 +916,73 @@ app.delete("/api/products/:id", requireLogin, async (req, res) => {
 
 
 app.put("/api/products/:id/photo", requireLogin, upload.single("photo"), async (req, res) => {
-  const removeUploadedFile = () => {
-    if (req.file) {
-      fs.unlink(req.file.path, () => {});
-    }
-  };
-
   try {
     const id = Number(req.params.id);
 
     if (!Number.isSafeInteger(id) || id <= 0) {
-      removeUploadedFile();
       return res.status(400).json({
         success: false,
-        message: "РќРµРІРµСЂРЅС‹Р№ ID С‚РѕРІР°СЂР°"
+        message: "Неверный ID товара"
       });
     }
 
     const product = await db.prepare(
-      "SELECT id, photo FROM products WHERE id = ? AND company_id = ?"
+      "SELECT id FROM products WHERE id = ? AND company_id = ?"
     ).get(id, req.session.companyId);
 
     if (!product) {
-      removeUploadedFile();
       return res.status(404).json({
         success: false,
-        message: "РўРѕРІР°СЂ РЅРµ РЅР°Р№РґРµРЅ"
+        message: "Товар не найден"
       });
     }
 
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Р’С‹Р±РµСЂРёС‚Рµ С„РѕС‚РѕРіСЂР°С„РёСЋ"
+        message: "Выберите фотографию"
       });
     }
 
+    const bytes = req.file.buffer.subarray(0, 12);
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const isPng = bytes.subarray(0, 8).equals(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    );
+    const isWebp = bytes.toString("ascii", 0, 4) === "RIFF" &&
+      bytes.toString("ascii", 8, 12) === "WEBP";
+
+    const validPhoto =
+      (req.file.mimetype === "image/jpeg" && isJpeg) ||
+      (req.file.mimetype === "image/png" && isPng) ||
+      (req.file.mimetype === "image/webp" && isWebp);
+
+    if (!validPhoto) {
+      return res.status(400).json({
+        success: false,
+        message: "Недопустимый формат фотографии"
+      });
+    }
+
+    const photoUrl = await uploadImage(req.file.buffer);
+
     await db.prepare(
       "UPDATE products SET photo = ? WHERE id = ? AND company_id = ?"
-    ).run(req.file.filename, id, req.session.companyId);
+    ).run(photoUrl, id, req.session.companyId);
 
     return res.json({
       success: true,
-      message: "Р¤РѕС‚РѕРіСЂР°С„РёСЏ РѕР±РЅРѕРІР»РµРЅР°"
+      message: "Фотография обновлена"
     });
   } catch (error) {
-    removeUploadedFile();
-    console.error("РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С„РѕС‚РѕРіСЂР°С„РёРё:", error);
+    console.error("Ошибка обновления фотографии:", error);
 
     return res.status(500).json({
       success: false,
-      message: "РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ С„РѕС‚РѕРіСЂР°С„РёРё"
+      message: "Ошибка обновления фотографии"
     });
   }
 });
-
-
 
 /* FORMA MARKETPLACE вЂ” СЂР°СЃС†РµРЅРєРё РїСЂРѕРґР°РІС†РѕРІ */
 
