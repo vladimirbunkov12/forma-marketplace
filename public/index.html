@@ -175,10 +175,16 @@
       if (typeof value !== "string" || !value.trim()) return null;
       try {
         const url = new URL(value, window.location.origin);
-        if (url.origin !== window.location.origin || !url.pathname.startsWith("/uploads/")) {
-          return null;
+        // Same-origin uploads (legacy local storage).
+        if (url.origin === window.location.origin && url.pathname.startsWith("/uploads/")) {
+          return url.href;
         }
-        return url.href;
+        // Absolute http(s) URLs (Cloudinary CDN). Reject unsafe schemes
+        // such as javascript:, data:, blob: to avoid injection.
+        if (url.protocol === "https:" || url.protocol === "http:") {
+          return url.href;
+        }
+        return null;
       } catch {
         return null;
       }
